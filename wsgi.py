@@ -1,7 +1,8 @@
-from appserver import create_app
+from app import create_app
+
+# WSGI application for Gunicorn
+gunicorn_app = create_app()
 
 if __name__ == '__main__':
-    create_app = create_app()
-    create_app.run()
-else:
-    gunicorn_app = create_app()
+    app = create_app()
+    app.run(debug=True, host='0.0.0.0', port=5000)
