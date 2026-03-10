@@ -1,0 +1,6 @@
+# Training configuration shared across training scripts
+
+train_split: 0.8          # 80% train / 20% test (temporal split, no shuffle)
+horizons: [1, 2, 3, 4, 5] # forecast horizons in hours
+target_station: "Dhompo"
+data_path: "../data/data-clean.csv"
