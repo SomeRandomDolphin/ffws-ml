@@ -1,0 +1,43 @@
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.10.1
+    container_name: dhompo_mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
+    command: >
+      mlflow server
+        --backend-store-uri sqlite:///mlruns/mlflow.db
+        --default-artifact-root /mlruns/artifacts
+        --host 0.0.0.0
+        --port 5000
+        --allowed-hosts localhost,localhost:5000,127.0.0.1,127.0.0.1:5000,[::1],[::1]:5000,mlflow,mlflow:5000,dhompo_mlflow,dhompo_mlflow:5000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: dhompo_api
+    ports:
+      - "8000:8000"
+    environment:
+      - PREDICTOR_BACKEND=mlflow
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MODEL_ALIAS=production
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./mlruns:/mlruns
+      - ./models:/app/models:ro
+
+networks:
+  default:
+    name: dhompo_net
