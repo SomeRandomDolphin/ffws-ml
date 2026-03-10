@@ -1,0 +1,13 @@
+Stasiun,Elevasi (m),Lag Teoritis (step),Lag Teoritis (menit),r (teoritis),Lag Empiris (menit),r (empiris)
+Bd. Suwoto,503,9,270,0.8246,120,0.9273
+Krajan Timur,335,8,240,0.8658,150,0.8946
+Purwodadi,287,7,210,0.9475,180,0.9574
+Bd. Baong,169,5,150,0.3942,150,0.3942
+Bd. Lecari,167,8,240,0.9304,180,0.9472
+Bd. Bakalan,136,6,180,0.5612,180,0.5612
+AWLR Kademungan,128,4,120,0.5114,120,0.5114
+Bd. Domas,57,2,60,0.7463,90,0.7488
+Bd Guyangan,32,4,120,0.8542,30,0.8721
+Bd. Grinting,28,1,30,0.9836,30,0.9836
+Sidogiri,24,3,90,0.9195,0,0.941
+Klosod,22,2,60,0.9165,0,0.9365
