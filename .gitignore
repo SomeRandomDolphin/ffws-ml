@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Model artifacts
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.mar
+serving/torchserve/model_store/
+
+# Notebooks
+.ipynb_checkpoints/
+output_eda/
+
+# Data
+data/data-raw.xlsx
+data/data-clean.csv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+
+# Project notes 
+DEV_NOTES.md
