@@ -55,6 +55,7 @@ logs/
 # MkDocs
 site/
 docs
+mkdocs.yml
 
 # Project notes 
 DEV_NOTES.md
