@@ -52,5 +52,9 @@ logs/
 # Testing
 .pytest_cache/
 
+# MkDocs
+site/
+docs
+
 # Project notes 
 DEV_NOTES.md
