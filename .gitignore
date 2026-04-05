@@ -12,6 +12,7 @@ build/
 # MLflow
 mlruns/
 mlartifacts/
+catboost_info/
 
 # Model artifacts
 *.joblib
@@ -33,8 +34,7 @@ models/pytorch/*.pkl
 output_eda/
 
 # Data
-data/data-raw.xlsx
-data/data-clean.csv
+data/
 
 # IDE
 .idea/

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dhompo"
 version = "0.1.0"
-description = "Multi-horizon flood prediction for Sungai Dhompo early-warning system"
+description = "Time-series based multi-horizon water level prediction system for Sungai Dhompo flood early warning"
 requires-python = ">=3.12"
 dependencies = [
     "pandas>=2.0",
@@ -20,6 +20,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+tuning = [
+    "optuna>=3.5",
+    "lightgbm>=4.0",
+    "catboost>=1.2",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
@@ -31,6 +36,9 @@ dev = [
     "seaborn>=0.13",
     "statsmodels>=0.14",
     "scipy>=1.12",
+    "optuna>=3.5",
+    "lightgbm>=4.0",
+    "catboost>=1.2",
 ]
 
 [tool.setuptools.packages.find]
