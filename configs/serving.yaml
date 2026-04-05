@@ -1,6 +1,6 @@
 # Serving defaults for API and MLflow-backed inference
 
-mlflow_uri: "http://localhost:5000"
+mlflow_uri: "mlruns"
 model_alias: "production"
 
 api:

@@ -1,16 +1,4 @@
-"""FilePredictor: load sklearn models langsung dari .pkl (tanpa MLflow).
-
-Digunakan saat MLflow tidak tersedia — cocok untuk development lokal
-dan testing. Memuat model terbaik per horizon berdasarkan hasil riset
-(xls_11_model_metrics.xlsx).
-
-Best models per horizon:
-  h1 → XGBoost          (NSE 0.9893)
-  h2 → Gradient Boosting (NSE 0.9824)
-  h3 → Gradient Boosting (NSE 0.9571)
-  h4 → Lasso            (NSE 0.8894)
-  h5 → Lasso            (NSE 0.7713)
-"""
+"""FilePredictor: Memuat model terbaik per horizon berdasarkan hasil riset"""
 
 from __future__ import annotations
 
