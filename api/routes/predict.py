@@ -1,64 +1,15 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
-from typing import Any
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from api.schemas import HorizonPredictions, PredictRequest, PredictResponse
-from dhompo.config import load_serving_config
-from dhompo.serving.file_predictor import FilePredictor
+from api.predictor_state import get_predictor
+from dhompo.serving.two_tier import TwoTierPredictor
 
 router = APIRouter()
-
-_predictor: Any | None = None
-_SERVING_CFG = load_serving_config()
-
-
-def _configured_backend() -> str:
-    return os.getenv("PREDICTOR_BACKEND", "file").strip().lower()
-
-
-def _mlflow_tracking_uri() -> str:
-    return os.getenv(
-        "MLFLOW_TRACKING_URI", _SERVING_CFG.get("mlflow_uri", "http://localhost:5000")
-    )
-
-
-def _model_alias() -> str:
-    return os.getenv("MODEL_ALIAS", _SERVING_CFG.get("model_alias", "production"))
-
-
-def get_predictor():
-    global _predictor
-    if _predictor is None:
-        backend = _configured_backend()
-        if backend == "mlflow":
-            try:
-                from dhompo.serving.predictor import HistoricalPredictor
-            except ImportError as exc:
-                raise HTTPException(
-                    status_code=503,
-                    detail=(
-                        "MLflow backend requested but MLflow dependencies are not "
-                        "available in this environment."
-                    ),
-                ) from exc
-
-            _predictor = HistoricalPredictor(
-                mlflow_tracking_uri=_mlflow_tracking_uri(),
-                alias=_model_alias(),
-            )
-        elif backend == "file":
-            _predictor = FilePredictor()
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Unsupported predictor backend: {backend}",
-            )
-    return _predictor
 
 
 def _history_to_dataframe(request: PredictRequest) -> pd.DataFrame:
@@ -74,17 +25,52 @@ def _history_to_dataframe(request: PredictRequest) -> pd.DataFrame:
     return df
 
 
+def _horizons_from_dict(values: dict[str, float]) -> HorizonPredictions:
+    return HorizonPredictions(
+        h1=values["h1"], h2=values["h2"], h3=values["h3"],
+        h4=values["h4"], h5=values["h5"],
+    )
+
+
 @router.post("/predict", response_model=PredictResponse, tags=["prediction"])
-async def predict(request: PredictRequest) -> PredictResponse:
+async def predict(request: PredictRequest, http_request: Request) -> PredictResponse:
     """Predict water levels at Dhompo for +1 to +5 hours.
 
     Requires at least 24 rows (12 hours) of 30-minute historical sensor
-    data from all upstream stations and Dhompo.
+    data from all upstream stations and Dhompo. The two-tier router selects
+    Tier-A (adaptive) or Tier-B (autoregressive floor) based on telemetry
+    health and emits per-horizon degradation metadata.
     """
     try:
-        predictor = get_predictor()
+        predictor = get_predictor(http_request)
         df = _history_to_dataframe(request)
-        result = predictor.predict_from_history(df)
+
+        if isinstance(predictor, TwoTierPredictor):
+            routed = predictor.route(df)
+            preds = routed.predictions
+            serving_tier = routed.serving_tier
+            degradation = routed.degradation
+            shadow = (
+                _horizons_from_dict(routed.shadow_predictions)
+                if routed.shadow_predictions is not None
+                else None
+            )
+            quality_flags = routed.quality_flags
+            models = (
+                predictor.model_mapping() if serving_tier == "A"
+                else predictor.fallback_model_mapping()
+            )
+        else:
+            result = predictor.predict_from_history(df)
+            preds = result.predictions
+            serving_tier = "A"
+            degradation = {}
+            shadow = None
+            quality_flags = {}
+            models = (
+                predictor.model_mapping()
+                if hasattr(predictor, "model_mapping") else {}
+            )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except HTTPException:
@@ -92,20 +78,19 @@ async def predict(request: PredictRequest) -> PredictResponse:
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Model unavailable: {exc}") from exc
 
-    preds = result.predictions
     last_ts = request.history[-1].timestamp
-    backend = getattr(predictor, "backend_name", _configured_backend())
-    models = predictor.model_mapping() if hasattr(predictor, "model_mapping") else {}
+    backend = getattr(
+        predictor, "backend_name",
+        getattr(http_request.app.state, "predictor_backend", "file"),
+    )
     return PredictResponse(
-        predictions=HorizonPredictions(
-            h1=preds["h1"],
-            h2=preds["h2"],
-            h3=preds["h3"],
-            h4=preds["h4"],
-            h5=preds["h5"],
-        ),
+        predictions=_horizons_from_dict(preds),
         backend=backend,
         models=models,
         timestamp=last_ts,
         prediction_time=datetime.now(timezone.utc),
+        serving_tier=serving_tier,
+        degradation=degradation,
+        shadow_predictions=shadow,
+        quality_flags=quality_flags,
     )

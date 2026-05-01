@@ -1,31 +1,31 @@
-import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
-from dhompo.config import load_serving_config
+from api.predictor_state import build_model_references, model_alias, readiness_status
 from dhompo.data.loader import UPSTREAM_STATIONS, TARGET_STATION
-from dhompo.serving.file_predictor import BEST_MODEL_FILES, SCALER_FILENAME
+from dhompo.serving.file_predictor import SCALER_FILENAME
 
 router = APIRouter()
-_SERVING_CFG = load_serving_config()
 
 
 @router.get("/health", tags=["health"])
-async def health_check() -> dict:
-    """Return service liveness status."""
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+async def health_check(request: Request) -> JSONResponse:
+    """Return service readiness status."""
+    payload = readiness_status(request.app)
+    payload["timestamp"] = datetime.now(timezone.utc)
+    status_code = 200 if payload["ready"] else 503
+    return JSONResponse(status_code=status_code, content=jsonable_encoder(payload))
 
 
 @router.get("/model-info", tags=["health"])
-async def model_info() -> dict:
+async def model_info(request: Request) -> dict:
     """Return info about loaded models and required input shape."""
-    backend = os.getenv("PREDICTOR_BACKEND", "file").strip().lower()
-    model_alias = os.getenv("MODEL_ALIAS", _SERVING_CFG.get("model_alias", "production"))
-    if backend == "mlflow":
-        model_refs = {f"h{h}": f"models:/dhompo_h{h}@{model_alias}" for h in range(1, 6)}
-    else:
-        model_refs = {f"h{h}": fname for h, fname in BEST_MODEL_FILES.items()}
+    readiness = readiness_status(request.app)
+    backend = readiness["backend"]
+    model_refs = readiness["models"] or build_model_references(backend)
     return {
         "backend": backend,
         "available_backends": ["file", "mlflow"],
@@ -33,4 +33,7 @@ async def model_info() -> dict:
         "scaler": SCALER_FILENAME,
         "required_history_rows": 24,
         "required_stations": UPSTREAM_STATIONS + [TARGET_STATION],
+        "ready": readiness["ready"],
+        "error": readiness["error"],
+        "model_alias": model_alias() if backend == "mlflow" else None,
     }

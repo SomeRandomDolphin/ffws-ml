@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
+from typing import Literal, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 from dhompo.data.loader import TARGET_STATION, UPSTREAM_STATIONS
 
@@ -97,3 +98,34 @@ class PredictResponse(BaseModel):
     )
     timestamp: datetime = Field(..., description="Last observation timestamp")
     prediction_time: datetime = Field(..., description="Server time of prediction")
+    serving_tier: Literal["A", "B"] = Field(
+        "A",
+        description=(
+            "Which tier produced the served prediction. 'A' = adaptive 14-station "
+            "model (production); 'B' = autoregressive Dhompo-only fallback, "
+            "activated when all three telemetry stations carry bad flags."
+        ),
+    )
+    degradation: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Per-horizon degradation reason when the horizon's primary upstream "
+            "station carries a bad quality flag. Empty when all primaries OK. "
+            "Format: {'h4': 'PRIMARY_STATION_FLATLINE:Purwodadi'}."
+        ),
+        examples=[{"h4": "PRIMARY_STATION_FLATLINE:Purwodadi"}],
+    )
+    shadow_predictions: Optional[HorizonPredictions] = Field(
+        None,
+        description=(
+            "Tier-B prediction logged in shadow when Tier-A is serving. None when "
+            "Tier-B is itself serving (no shadow Tier-A in that case)."
+        ),
+    )
+    quality_flags: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Latest per-station quality flag at the request's most recent "
+            "timestep. Values: OK, STUCK, FLATLINE, OUT_OF_RANGE, MISSING, STALE."
+        ),
+    )
