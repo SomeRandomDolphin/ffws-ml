@@ -34,7 +34,12 @@ models/pytorch/*.pkl
 output_eda/
 
 # Data
-data/
+/data/
+/artifacts/
+
+# Reports & docs (binary/generated)
+/reports/
+/docs/
 
 # IDE
 .idea/
@@ -54,7 +59,6 @@ logs/
 
 # MkDocs
 site/
-docs
 mkdocs.yml
 
 # Project notes 
