@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 # Support running without package install
@@ -9,9 +10,17 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.predictor_state import load_predictor_state
 from api.routes.health import router as health_router
 from api.routes.predict import router as predict_router
 from dhompo.config import load_serving_config
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_predictor_state(app)
+    yield
+
 
 app = FastAPI(
     title="Dhompo Flood Prediction API",
@@ -22,6 +31,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
