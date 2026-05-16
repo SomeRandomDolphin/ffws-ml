@@ -21,12 +21,6 @@ catboost_info/
 *.mar
 serving/torchserve/model_store/
 models/sklearn/*.pkl
-!models/sklearn/xgboost_h1.pkl
-!models/sklearn/gradient_boosting_h2.pkl
-!models/sklearn/gradient_boosting_h3.pkl
-!models/sklearn/lasso_alpha001_h4.pkl
-!models/sklearn/lasso_alpha001_h5.pkl
-!models/sklearn/scaler.pkl
 models/pytorch/*.pkl
 
 # Notebooks
@@ -40,6 +34,9 @@ output_eda/
 # Reports & docs (binary/generated)
 /reports/
 /docs/
+
+# Local/generated utility scripts
+/scripts/
 
 # IDE
 .idea/

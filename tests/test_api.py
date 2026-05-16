@@ -8,22 +8,45 @@ from fastapi.testclient import TestClient
 from api.main import app
 from tests.conftest import make_history_payload
 
-client = TestClient(app)
+
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 class TestHealth:
-    def test_health(self):
+    def test_health(self, client):
         resp = client.get("/health")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ok"
+        assert data["ready"] is True
+        assert data["backend"] == "file"
+        assert data["error"] is None
         assert "timestamp" in data
 
-    def test_model_info(self):
+    def test_health_not_ready(self, monkeypatch):
+        monkeypatch.setattr(
+            "api.predictor_state.create_predictor",
+            lambda: (_ for _ in ()).throw(RuntimeError("model bootstrap failed")),
+        )
+        with TestClient(app) as failing_client:
+            resp = failing_client.get("/health")
+
+        assert resp.status_code == 503
+        data = resp.json()
+        assert data["status"] == "error"
+        assert data["ready"] is False
+        assert data["error"] == "model bootstrap failed"
+
+    def test_model_info(self, client):
         resp = client.get("/model-info")
         assert resp.status_code == 200
         data = resp.json()
         assert data["backend"] == "file"
+        assert data["ready"] is True
+        assert data["error"] is None
         assert "mlflow" in data["available_backends"]
         assert "h1" in data["models"]
         assert "h5" in data["models"]
@@ -32,16 +55,18 @@ class TestHealth:
 
     def test_model_info_mlflow_backend(self, monkeypatch):
         monkeypatch.setenv("PREDICTOR_BACKEND", "mlflow")
-        resp = client.get("/model-info")
-        assert resp.status_code == 200
-        data = resp.json()
+        with TestClient(app) as mlflow_client:
+            resp = mlflow_client.get("/model-info")
+            assert resp.status_code == 200
+            data = resp.json()
+
         assert data["backend"] == "mlflow"
         assert data["models"]["h1"] == "models:/dhompo_h1@production"
         monkeypatch.delenv("PREDICTOR_BACKEND", raising=False)
 
 
 class TestPredict:
-    def test_predict_success(self, sample_history_payload):
+    def test_predict_success(self, client, sample_history_payload):
         resp = client.post("/predict", json={"history": sample_history_payload})
         assert resp.status_code == 200
         data = resp.json()
@@ -54,12 +79,23 @@ class TestPredict:
         assert "timestamp" in data
         assert "prediction_time" in data
 
-    def test_predict_insufficient_history(self):
+    def test_predict_not_ready(self, monkeypatch, sample_history_payload):
+        monkeypatch.setattr(
+            "api.predictor_state.create_predictor",
+            lambda: (_ for _ in ()).throw(RuntimeError("model bootstrap failed")),
+        )
+        with TestClient(app) as failing_client:
+            resp = failing_client.post("/predict", json={"history": sample_history_payload})
+
+        assert resp.status_code == 503
+        assert resp.json()["detail"] == "Predictor is not ready: model bootstrap failed"
+
+    def test_predict_insufficient_history(self, client):
         payload = make_history_payload(n_rows=10)
         resp = client.post("/predict", json={"history": payload})
         assert resp.status_code == 422
 
-    def test_predict_missing_stations(self):
+    def test_predict_missing_stations(self, client):
         """Send rows with only Dhompo — missing upstream stations."""
         from datetime import datetime, timedelta
 
@@ -73,7 +109,7 @@ class TestPredict:
         resp = client.post("/predict", json={"history": rows})
         assert resp.status_code == 422
 
-    def test_predict_response_shape(self, sample_history_payload):
+    def test_predict_response_shape(self, client, sample_history_payload):
         resp = client.post("/predict", json={"history": sample_history_payload})
         assert resp.status_code == 200
         data = resp.json()
@@ -84,11 +120,11 @@ class TestPredict:
         # Verify predictions has exactly h1..h5
         assert set(data["predictions"].keys()) == {"h1", "h2", "h3", "h4", "h5"}
 
-    def test_predict_empty_body(self):
+    def test_predict_empty_body(self, client):
         resp = client.post("/predict", json={})
         assert resp.status_code == 422
 
-    def test_predict_bad_timestamp_boundary(self):
+    def test_predict_bad_timestamp_boundary(self, client):
         """Timestamps not on 30-min boundary should fail validation."""
         from datetime import datetime, timedelta
 
