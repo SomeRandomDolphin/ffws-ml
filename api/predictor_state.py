@@ -33,6 +33,8 @@ def build_model_references(backend: str | None = None) -> dict[str, str]:
     if backend_name == "mlflow":
         alias = model_alias()
         return {f"h{h}": f"models:/dhompo_h{h}@{alias}" for h in range(1, 6)}
+    if backend_name == "tier_a_adaptive":
+        return {f"h{h}": "tier_a_adaptive" for h in range(1, 6)}
     return {f"h{h}": fname for h, fname in BEST_MODEL_FILES.items()}
 
 
@@ -54,6 +56,16 @@ def create_predictor() -> Any:
 
     if backend == "file":
         return TwoTierPredictor(tier_a=FilePredictor())
+
+    if backend == "tier_a_adaptive":
+        try:
+            from dhompo.serving.tier_a_adaptive import TierAAdaptivePredictor
+        except ImportError as exc:
+            raise RuntimeError(
+                "Tier-A adaptive backend requested but PyTorch is not installed. "
+                "Run: pip install -r requirements-torch.txt"
+            ) from exc
+        return TwoTierPredictor(tier_a=TierAAdaptivePredictor())
 
     raise RuntimeError(f"Unsupported predictor backend: {backend}")
 

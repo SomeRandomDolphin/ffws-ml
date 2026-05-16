@@ -1,10 +1,12 @@
-"""Train Tier-A adaptive model (ARCHITECTURE.md §3, §6).
+"""Train Tier-A adaptive model.
 
 Wires :class:`AdaptiveTierA` + sensor dropout augmentation + composite
 peak-weighted/auxiliary loss against the cleaned 30-minute history. The
 default run is a smoke test — small batch size, few epochs — sized to verify
 the pipeline end-to-end on a developer laptop. Production training runs
 override the relevant CLI flags.
+
+See ARCHITECTURE.md sections 3 and 6 for the model and augmentation contract.
 
 Usage
 -----
@@ -27,7 +29,6 @@ import argparse
 import logging
 import pickle
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -39,13 +40,17 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from dhompo.data.loader import (
-    ALL_STATIONS,
-    TARGET_STATION,
-    load_data,
+from dhompo.data.loader import load_data
+from dhompo.data.tier_a_features import (
+    AR_LAG_DIM,
+    FEATURES_PER_STATION,
+    build_ar_lags,
+    build_per_station_features,
+    build_targets,
 )
 from dhompo.models.adaptive import AdaptiveTierA, AdaptiveTierAConfig
 from dhompo.training.losses import CompositeLoss, LossConfig
+from dhompo.training.normalizer import Normalizer
 from dhompo.training.sensor_dropout import (
     DropoutSchedule,
     apply_sensor_dropout,
@@ -53,10 +58,6 @@ from dhompo.training.sensor_dropout import (
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("tier_a")
-
-FEATURES_PER_STATION = 7
-AR_LAG_DIM = 6
-HORIZON_STEPS_PER_HOUR = 2  # 30-min cadence
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,80 +75,6 @@ def parse_args() -> argparse.Namespace:
                     help="Where to write best.pt + normalizer.pkl. "
                          "Defaults to artifacts/tier_a_adaptive/.")
     return p.parse_args()
-
-
-@dataclass
-class Normalizer:
-    """Per-station/feature z-score stats fit on training data only.
-
-    Targets and auxiliary targets are intentionally NOT normalized — the
-    peak-weighted loss thresholds (7.0 elevated, 9.0 flood) are expressed
-    in raw water-level units, and station-t0 aux targets need to remain
-    comparable to predictions emitted in raw units at inference time.
-    """
-
-    mean_feats: np.ndarray   # (n_stations, features_per_station)
-    std_feats: np.ndarray
-    mean_ar: np.ndarray      # (ar_lag_dim,)
-    std_ar: np.ndarray
-
-    @classmethod
-    def fit(cls, feats: torch.Tensor, ar: torch.Tensor, eps: float = 1e-6) -> "Normalizer":
-        f = feats.numpy()
-        a = ar.numpy()
-        mean_feats = f.mean(axis=0)
-        std_feats = f.std(axis=0).clip(min=eps)
-        mean_ar = a.mean(axis=0)
-        std_ar = a.std(axis=0).clip(min=eps)
-        return cls(mean_feats, std_feats, mean_ar, std_ar)
-
-    def apply(self, feats: torch.Tensor, ar: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        mf = torch.from_numpy(self.mean_feats).to(feats)
-        sf = torch.from_numpy(self.std_feats).to(feats)
-        ma = torch.from_numpy(self.mean_ar).to(ar)
-        sa = torch.from_numpy(self.std_ar).to(ar)
-        return (feats - mf) / sf, (ar - ma) / sa
-
-
-def build_per_station_features(df: pd.DataFrame) -> np.ndarray:
-    """Reshape sensor history into (n_timesteps, n_stations, features_per_station).
-
-    Features per station (in fixed order):
-      0 t0 value
-      1 lag-1 (30 min)
-      2 lag-2 (60 min)
-      3 lag-3 (90 min)
-      4 rolling mean 3 h (6 readings)
-      5 rolling std  3 h (6 readings)
-      6 first-difference at t0
-    """
-    n_steps = len(df)
-    n_stations = len(ALL_STATIONS)
-    out = np.zeros((n_steps, n_stations, FEATURES_PER_STATION), dtype=np.float32)
-    for s_idx, station in enumerate(ALL_STATIONS):
-        col = df[station]
-        out[:, s_idx, 0] = col.to_numpy()
-        out[:, s_idx, 1] = col.shift(1).to_numpy()
-        out[:, s_idx, 2] = col.shift(2).to_numpy()
-        out[:, s_idx, 3] = col.shift(3).to_numpy()
-        out[:, s_idx, 4] = col.rolling(window=6, min_periods=6).mean().to_numpy()
-        out[:, s_idx, 5] = col.rolling(window=6, min_periods=6).std(ddof=0).to_numpy()
-        out[:, s_idx, 6] = col.diff().to_numpy()
-    return out
-
-
-def build_ar_lags(df: pd.DataFrame) -> np.ndarray:
-    target = df[TARGET_STATION]
-    lags = np.stack([target.shift(i).to_numpy() for i in range(AR_LAG_DIM)], axis=-1)
-    return lags.astype(np.float32)
-
-
-def build_targets(df: pd.DataFrame) -> np.ndarray:
-    target = df[TARGET_STATION]
-    horizons = []
-    for h in range(1, 6):
-        horizons.append(target.shift(-h * HORIZON_STEPS_PER_HOUR).to_numpy())
-    return np.stack(horizons, axis=-1).astype(np.float32)
 
 
 def assemble_tensors(df: pd.DataFrame):

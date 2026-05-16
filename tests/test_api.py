@@ -116,6 +116,7 @@ class TestPredict:
         # Verify all expected top-level keys
         assert set(data.keys()) == {
             "predictions", "backend", "models", "timestamp", "prediction_time",
+            "serving_tier", "degradation", "shadow_predictions", "quality_flags",
         }
         # Verify predictions has exactly h1..h5
         assert set(data["predictions"].keys()) == {"h1", "h2", "h3", "h4", "h5"}

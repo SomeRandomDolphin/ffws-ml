@@ -33,7 +33,8 @@ output_eda/
 
 # Reports & docs (binary/generated)
 /reports/
-/docs/
+/docs/*
+!/docs/ARCHITECTURE.md
 
 # Local/generated utility scripts
 /scripts/

@@ -1,4 +1,4 @@
-"""Adaptive Tier-A model (ARCHITECTURE.md §3).
+"""Adaptive Tier-A model
 
 Architecture
 ------------

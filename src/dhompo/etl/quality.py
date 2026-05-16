@@ -1,17 +1,9 @@
-"""Quality-flag detectors for sensor time-series (ARCHITECTURE.md §4).
+"""Quality-flag detectors for sensor time-series.
 
 Six flag values: ``OK``, ``STUCK``, ``FLATLINE``, ``OUT_OF_RANGE``, ``MISSING``,
 ``STALE``. Detectors operate on a wide DataFrame (one column per station,
 DatetimeIndex on a 30-minute grid) and emit a parallel flag DataFrame of the
 same shape. Detection is fully deterministic and replayable.
-
-The hysteresis rule is applied across the time axis: once ``FLATLINE`` or
-``STUCK`` is set on a station, three consecutive ``OK`` readings are required
-to clear it. The zero-shortcut promotes ``value == 0.0`` on a non-zero-baseline
-station to immediate ``FLATLINE``.
-
-Detectors are intentionally cheap (vectorised pandas) — the ETL budget in
-ARCHITECTURE.md §9.4 allows ≤ 50 ms per request.
 """
 
 from __future__ import annotations
@@ -46,7 +38,7 @@ BAD_FLAGS: frozenset[QualityFlag] = frozenset(
 
 @dataclass(frozen=True)
 class QualityConfig:
-    """Detector thresholds — see ARCHITECTURE.md §4 for rationale."""
+    """Detector thresholds — see ARCHITECTURE.md section 4 for rationale."""
 
     flatline_window: int = 6
     flatline_var_threshold: float = 1e-4

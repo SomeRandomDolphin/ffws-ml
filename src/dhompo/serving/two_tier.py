@@ -1,8 +1,9 @@
-"""Two-tier adaptive predictor (ARCHITECTURE.md §3, §5, §9).
+"""Two-tier adaptive predictor.
 
 Tier-A is the adaptive 14-station model used in normal operation. Tier-B is the
 Dhompo-only autoregressive floor used when all three telemetry stations carry
-bad quality flags simultaneously.
+bad quality flags simultaneously. See ARCHITECTURE.md sections 3, 5, and 9 for
+the routing rules and the fallback contract.
 
 Phase 1 scaffolding notes
 -------------------------
