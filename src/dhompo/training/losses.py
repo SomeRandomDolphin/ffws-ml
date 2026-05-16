@@ -1,9 +1,9 @@
 """Composite loss for Tier-A: peak-weighted main + auxiliary station heads.
 
-ARCHITECTURE.md §3.4 specifies main loss × 1.0 plus 0.1 per auxiliary station
-head, summed. The main loss reuses the W1_moderate sample-weighting scheme
-from ``training/run_peak_weighted_experiment.py`` so the new training pipeline
-inherits the diagnosed flood-peak fix.
+ARCHITECTURE.md section 3.4 specifies main loss x 1.0 plus 0.1 per auxiliary
+station head, summed. The main loss reuses the W1_moderate sample-weighting
+scheme from ``training/run_peak_weighted_experiment.py`` so the new training
+pipeline inherits the diagnosed flood-peak fix.
 """
 
 from __future__ import annotations

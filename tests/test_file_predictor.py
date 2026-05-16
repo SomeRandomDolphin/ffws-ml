@@ -1,4 +1,4 @@
-"""Unit tests for FilePredictor."""
+"""Unit tests for FilePredictor"""
 
 from __future__ import annotations
 

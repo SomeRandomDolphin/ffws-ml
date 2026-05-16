@@ -1,4 +1,4 @@
-"""Stochastic sensor dropout (ARCHITECTURE.md §3.4 / §6).
+"""Stochastic sensor dropout.
 
 During training we drop sensors at random — for each (batch, station) pair we
 flip a Bernoulli(p) coin and, if it lands heads, mark the station as bad. The
@@ -6,9 +6,9 @@ station's value is zeroed and its mask bit is set to 0 before the model sees
 the batch. This trains Tier-A on the full sensor-dropout permutation space
 without enumerating it explicitly.
 
-Per ARCHITECTURE.md §6, the dropout probability is regime-conditional: more
-augmentation for normal flow (the easy regime, where the model can afford to
-lose context), less for floods (where every sensor matters).
+The dropout probability is regime-conditional: more augmentation for normal
+flow (the easy regime, where the model can afford to lose context), less for
+floods (where every sensor matters). See ARCHITECTURE.md sections 3.4 and 6.
 """
 
 from __future__ import annotations
@@ -27,12 +27,12 @@ except ImportError as exc:
 class DropoutSchedule:
     """Per-regime Bernoulli drop probabilities.
 
-    Defaults match ARCHITECTURE.md §6: flood = 0.3 (lightest), elevated = 0.4,
-    normal = 0.5 (heaviest).
+    Defaults match ARCHITECTURE.md section 6: flood = 0.3 (lightest),
+    elevated = 0.4, normal = 0.5 (heaviest).
 
-    Note: §6's `p_aug` (overall augmentation probability) and the per-station
-    drop probability are different knobs. This dataclass is the per-station
-    drop probability when the augmentation IS applied.
+    Note: the architecture's ``p_aug`` (overall augmentation probability) and
+    the per-station drop probability are different knobs. This dataclass holds
+    the per-station drop probability applied when the augmentation fires.
     """
 
     normal: float = 0.30

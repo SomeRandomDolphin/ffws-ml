@@ -1,4 +1,4 @@
-"""Tests for ETL quality detectors (ARCHITECTURE.md §4)."""
+"""Tests for ETL quality detectors"""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Tests for two-tier predictor routing (ARCHITECTURE.md §5, §9)."""
+"""Tests for two-tier predictor routing"""
 
 from __future__ import annotations
 

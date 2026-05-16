@@ -2,9 +2,6 @@
 
 Authoritative source: ``reports/figures/diagram-alir.png``. The basin has two
 parallel tributaries that converge at Dhompo, plus a short downstream tail.
-
-This module exposes the cluster membership, telemetry-vs-offline classification,
-and the per-horizon primary-station mapping used by the two-tier router (Q5/Q9).
 """
 
 from __future__ import annotations
