@@ -69,6 +69,17 @@ def history() -> pd.DataFrame:
     for station in ALL_STATIONS:
         if station not in df.columns:
             df[station] = 0.5
+    # The shared make_history_df uses uniform-random levels with diffs
+    # often above 1.0 m / 30 min, which trips OUT_OF_RANGE on the physical-
+    # envelope detector. Smooth out the columns the mask tests inspect so
+    # the fixture stays a "healthy basin" baseline.
+    rng = np.random.default_rng(7)
+    for station in (TARGET_STATION, "Klosod", "Purwodadi", "AWLR Kademungan"):
+        if station not in df.columns:
+            continue
+        baseline = float(df[station].iloc[0])
+        steps = rng.normal(loc=0.0, scale=0.05, size=len(df))
+        df[station] = (baseline + np.cumsum(steps)).clip(min=0.1)
     return df
 
 
