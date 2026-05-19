@@ -1,26 +1,8 @@
-"""Train Tier-A adaptive model.
+"""Training model adaptive Tier-A.
 
-Wires :class:`AdaptiveTierA` + sensor dropout augmentation + composite
-peak-weighted/auxiliary loss against the cleaned 30-minute history. The
-default run is a smoke test — small batch size, few epochs — sized to verify
-the pipeline end-to-end on a developer laptop. Production training runs
-override the relevant CLI flags.
-
-See ARCHITECTURE.md sections 3 and 6 for the model and augmentation contract.
-
-Usage
------
+Usage:
     python training/run_tier_a_adaptive.py --epochs 5
     python training/run_tier_a_adaptive.py --epochs 200 --batch-size 256 --mlflow
-
-Inputs are reshaped from the existing tabular feature pipeline into a
-per-station tensor of shape (batch, n_stations, features_per_station). The
-seven features per station are:
-
-    [t0, lag1, lag2, lag3, rolling_mean_3h, rolling_std_3h, diff1]
-
-The autoregressive lag tensor takes the last 6 readings of Dhompo (3 h of
-30-minute history). Targets are Dhompo water level at h+1..h+5 hours.
 """
 
 from __future__ import annotations
@@ -75,16 +57,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--mlflow", action="store_true",
-                    help="Log run to MLflow (skip for smoke tests).")
+                    help="Log run ke MLflow (skip untuk smoke test).")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--data", default=None,
-                    help="Override path to data-clean.csv.")
+                    help="Override path ke data-clean.csv.")
     p.add_argument("--checkpoint-dir", default=None,
-                    help="Where to write best.pt + normalizer.pkl. "
-                         "Defaults to artifacts/tier_a_adaptive/.")
+                    help="Lokasi tulis best.pt + normalizer.pkl. "
+                         "Default: artifacts/tier_a_adaptive/.")
     p.add_argument("--no-synthesis", action="store_true",
-                    help="Disable the basin-coherent synthetic augmenter "
-                         "for ablation runs.")
+                    help="Matikan augmenter sintetis basin-coherent "
+                         "untuk run ablasi.")
     return p.parse_args()
 
 
@@ -101,7 +83,7 @@ def assemble_tensors(df: pd.DataFrame):
     feats = feats[valid]
     ar = ar[valid]
     y = y[valid]
-    aux_y = feats[:, :, 0]  # auxiliary target = each station's t0 value
+    aux_y = feats[:, :, 0]  # target auxiliary = nilai t0 tiap stasiun
     mask = np.ones((feats.shape[0], feats.shape[1]), dtype=bool)
     return (
         torch.from_numpy(feats),
@@ -123,11 +105,7 @@ def temporal_split(*tensors, train_frac: float = 0.8):
 def train_one_epoch(
     model, loader, loss_fn, optimiser, device, schedule, normalizer, augmenter,
 ):
-    """One pass over the training loader.
-
-    Returns a dict with averaged loss components plus the per-epoch
-    augmentation attempt count and rejection count.
-    """
+    """Satu pass training loader; mengembalikan rata-rata loss + hitungan aug."""
     model.train()
     totals = {"total": 0.0, "main": 0.0, "aux": 0.0}
     n_batches = 0
@@ -203,9 +181,8 @@ def main() -> None:
         )
 
     normalizer = Normalizer.fit(tr_feats, tr_ar)
-    # Raw tensors flow through the DataLoader; normalization happens per
-    # batch inside train_one_epoch / evaluate so the augmenter can operate
-    # on un-normalized values (jitter sigma is defined in raw units).
+    # Normalisasi dilakukan per batch supaya augmenter melihat nilai mentah
+    # (jitter sigma didefinisikan dalam satuan tinggi muka air mentah).
 
     train_ds = TensorDataset(tr_feats, tr_mask, tr_ar, tr_y, tr_aux)
     test_ds = TensorDataset(te_feats, te_mask, te_ar, te_y, te_aux)
@@ -299,6 +276,13 @@ def main() -> None:
                 mlflow.log_metrics({
                     f"test_{k}": v for k, v in te_metrics.items()
                 }, step=epoch)
+                if augmenter is not None:
+                    aug_cfg = augmenter.config
+                    mlflow.log_metrics({
+                        "synthesis_jitter_sigma_pct": aug_cfg.jitter_sigma_pct,
+                        "synthesis_scale_low": aug_cfg.scale_low,
+                        "synthesis_scale_high": aug_cfg.scale_high,
+                    }, step=epoch)
     finally:
         if run_ctx is not None:
             import mlflow
