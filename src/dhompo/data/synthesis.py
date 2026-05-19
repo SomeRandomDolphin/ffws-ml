@@ -1,25 +1,4 @@
-"""Basin-coherent synthetic augmenter for Tier-A training.
-
-Applies regime-conditional augmentation per batch on raw (un-normalized)
-feature tensors. The augmenter mutates the t0 value channel (index 0) of
-the per-station feature tensor and the autoregressive lag tensor; rolling
-statistics (channels 4-5) and difference features (channel 6) are left
-untouched in this iteration because recomputing them would require holding
-the underlying time series per batch.
-
-Pipeline order per batch:
-  1. Sample a per-sample augmentation coin (regime-conditional p_aug).
-  2. Apply event-wide magnitude scaling jointly across stations.
-  3. Apply per-station Gaussian jitter on top of the scaled values.
-  4. Run validity gates; reject any sample that violates them.
-
-The class returns the augmented tensors plus a rejection mask so the
-training loop can decide whether to retry, fall back to the original
-sample, or just drop the rejected ones.
-
-See ARCHITECTURE.md section 6 for the augmentation contract and intended
-hyperparameters.
-"""
+"""Augmenter sintetis berskala basin untuk training Tier-A."""
 
 from __future__ import annotations
 
@@ -38,7 +17,7 @@ _VALUE_CHANNEL: int = 0
 
 @dataclass(frozen=True)
 class AugmentationSchedule:
-    """Per-regime probability of applying augmentation to a sample."""
+    """Probabilitas penerapan augmentasi per regime."""
 
     normal: float = 0.30
     elevated: float = 0.50
@@ -47,23 +26,14 @@ class AugmentationSchedule:
 
 @dataclass(frozen=True)
 class AugmentationConfig:
-    """Tunable knobs for jitter and magnitude scaling.
-
-    ``jitter_sigma_pct`` is the fraction of the per-station std used as the
-    Gaussian sigma. ``scale_low`` / ``scale_high`` bound the event-wide
-    multiplicative draw. ``min_plausible`` and ``max_plausible_pad`` give
-    the lower bound and the additive headroom above training max used by
-    the value-bounds validity gate.
-    """
+    """Parameter jitter dan magnitude scaling untuk augmenter."""
 
     jitter_sigma_pct: float = 0.005
     scale_low: float = 0.90
     scale_high: float = 1.15
     min_plausible: float = 0.0
-    # Upper-bound multiplier on per-station training_max. Water level can
-    # legitimately exceed the historical maximum (that is part of what the
-    # synthesizer models), so the gate only rejects clearly unphysical
-    # values. Default 1.5 = "up to 50% above the worst observed flood".
+    # Banjir sintetis bisa wajar melebihi maksimum historis, jadi batas atas
+    # dipakai sebagai pengali training_max, bukan cap absolut
     max_plausible_ratio: float = 1.5
     elevated_threshold: float = 7.0
     flood_threshold: float = 9.0
@@ -71,7 +41,7 @@ class AugmentationConfig:
 
 @dataclass
 class AugmentationStats:
-    """Per-batch accounting that the training loop can log or aggregate."""
+    """Hitungan augmentasi dan alasan penolakan per batch."""
 
     n_total: int = 0
     n_attempted: int = 0
@@ -88,7 +58,7 @@ def regime_indices(
     target_value: torch.Tensor,
     config: AugmentationConfig,
 ) -> torch.Tensor:
-    """Map a (batch,) tensor of Dhompo levels to regime index 0/1/2."""
+    """Petakan tensor (batch,) tinggi muka air Dhompo ke indeks regime 0/1/2."""
     regime = torch.zeros_like(target_value, dtype=torch.long)
     regime = torch.where(
         target_value >= config.elevated_threshold,
@@ -102,24 +72,7 @@ def regime_indices(
 
 
 class SyntheticAugmenter:
-    """Basin-coherent augmenter applied per training batch.
-
-    Parameters
-    ----------
-    station_std:
-        Per-station standard deviation of the raw t0 value channel,
-        shape ``(n_stations,)``. Cached at training start so jitter sigma
-        stays stable across epochs.
-    training_max:
-        Per-station maximum observed during training, shape ``(n_stations,)``.
-        Used as the upper bound of the value-bounds validity gate.
-    schedule:
-        Per-regime augmentation probabilities.
-    config:
-        Jitter and scaling hyperparameters.
-    rng:
-        Optional torch.Generator for reproducible tests.
-    """
+    """Augmenter berskala basin yang diterapkan per batch training."""
 
     def __init__(
         self,
@@ -148,12 +101,7 @@ class SyntheticAugmenter:
         return self._config
 
     def tighten(self, factor: float = 0.2) -> AugmentationConfig:
-        """Shrink jitter sigma and the scale range by ``factor`` (default 20%).
-
-        Called by the training loop when the rejection rate exceeds the
-        auto-tightening threshold. Returns the new config so the caller can
-        log the adjustment.
-        """
+        """Perketat jitter sigma dan rentang skala sebesar ``factor``."""
         scale_mid = 0.5 * (self._config.scale_low + self._config.scale_high)
         scale_half_range = 0.5 * (self._config.scale_high - self._config.scale_low)
         new_half = scale_half_range * (1.0 - factor)
@@ -193,26 +141,7 @@ class SyntheticAugmenter:
         ar_lags_raw: torch.Tensor,
         target_value: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, AugmentationStats]:
-        """Augment raw per-station feature tensors.
-
-        Parameters
-        ----------
-        feats_raw : (batch, n_stations, n_features)
-            Raw feature tensor. Channel 0 (t0 value) and the autoregressive
-            tensor are the only ones modified.
-        ar_lags_raw : (batch, ar_lag_dim)
-            Raw Dhompo lag tensor; scaled jointly with the feature tensor.
-        target_value : (batch,)
-            Raw Dhompo level used to pick the regime per sample.
-
-        Returns
-        -------
-        feats_aug, ar_lags_aug : same shape as inputs
-        kept_mask : (batch,) bool, True for samples that should be used.
-            Rejected samples have their tensors reset to the original
-            values so the caller can keep them unchanged if it wants.
-        stats : per-batch counts and rejection reasons.
-        """
+        """Augmentasi tensor fitur per-stasiun mentah; kembalikan kept mask dan stats."""
         if feats_raw.dim() != 3:
             raise ValueError(
                 f"feats_raw must be 3-D (B, S, F); got {tuple(feats_raw.shape)}."
@@ -257,7 +186,7 @@ class SyntheticAugmenter:
         feats_aug[..., _VALUE_CHANNEL] = feats_aug[..., _VALUE_CHANNEL] + jitter
 
         kept_mask = self._validity_gates(feats_aug, ar_aug, stats)
-        kept_mask = kept_mask | (~apply_aug)                     # rejection only counts attempted ones
+        kept_mask = kept_mask | (~apply_aug)                     # tolak hanya yang sempat diaugmentasi
 
         revert = ~kept_mask
         if bool(revert.any()):
@@ -276,7 +205,7 @@ class SyntheticAugmenter:
         u = self._coin((batch_size,), device, dtype)
         low = self._config.scale_low
         high = self._config.scale_high
-        # Asymmetric bias for flood samples — draw above 1.0 to emphasise peaks.
+        # Bias asimetris untuk sample banjir: draw di atas 1.0 supaya peak terangkat.
         flood_mask = regime == 2
         scale = low + (high - low) * u
         flood_scale = 1.0 + (high - 1.0) * u
@@ -288,14 +217,14 @@ class SyntheticAugmenter:
         ar_aug: torch.Tensor,
         stats: AugmentationStats,
     ) -> torch.Tensor:
-        """Return a (batch,) bool mask; False marks rejected samples."""
+        """Kembalikan bool mask (batch,); False menandai sample yang ditolak."""
         values = feats_aug[..., _VALUE_CHANNEL]                  # (B, S)
         ratio = self._config.max_plausible_ratio
         upper_bound = self._training_max.to(values) * ratio       # (S,)
         below = (values < self._config.min_plausible).any(dim=-1)
         above = (values > upper_bound).any(dim=-1)
         ar_below = (ar_aug < self._config.min_plausible).any(dim=-1)
-        # AR is target-only, so use the target's training_max bound.
+        # AR khusus stasiun target, pakai batas training_max target.
         ar_upper = self._training_max.max().to(ar_aug) * ratio
         ar_above = (ar_aug > ar_upper).any(dim=-1)
         bad = below | above | ar_below | ar_above
