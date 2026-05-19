@@ -1,15 +1,4 @@
-"""Tier-A adaptive predictor for the two-tier serving stack.
-
-Wraps a trained ``AdaptiveTierA`` checkpoint behind the
-``HorizonPredictor`` protocol expected by :class:`TwoTierPredictor`. Quality
-flags drive the mask: a station whose latest flag is in ``BAD_FLAGS`` is
-zeroed out of the cluster aggregation, matching the training-time sensor
-dropout contract.
-
-Torch is imported lazily inside the constructor so the rest of the serving
-package (FastAPI handlers, file predictor) stays import-clean for callers that
-never touch Tier-A.
-"""
+"""Predictor adaptive Tier-A untuk stack serving dua-tier."""
 
 from __future__ import annotations
 
@@ -53,18 +42,7 @@ class TierAAdaptiveArtifacts:
 
 
 class TierAAdaptivePredictor:
-    """Inference wrapper around a trained :class:`AdaptiveTierA` checkpoint.
-
-    Parameters
-    ----------
-    artifacts:
-        Resolved paths to the model checkpoint (``best.pt``) and the per-station
-        z-score normalizer pickle. Defaults to ``artifacts/tier_a_adaptive/``
-        relative to the project root.
-    device:
-        Torch device string; defaults to ``"cpu"`` since the production box is
-        CPU-only per the deployment topology.
-    """
+    """Wrapper inferensi untuk checkpoint ``AdaptiveTierA`` yang sudah dilatih."""
 
     def __init__(
         self,
