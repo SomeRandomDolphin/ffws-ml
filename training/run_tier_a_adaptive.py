@@ -1,26 +1,8 @@
-"""Train Tier-A adaptive model.
+"""Training model adaptive Tier-A.
 
-Wires :class:`AdaptiveTierA` + sensor dropout augmentation + composite
-peak-weighted/auxiliary loss against the cleaned 30-minute history. The
-default run is a smoke test — small batch size, few epochs — sized to verify
-the pipeline end-to-end on a developer laptop. Production training runs
-override the relevant CLI flags.
-
-See ARCHITECTURE.md sections 3 and 6 for the model and augmentation contract.
-
-Usage
------
+Usage:
     python training/run_tier_a_adaptive.py --epochs 5
     python training/run_tier_a_adaptive.py --epochs 200 --batch-size 256 --mlflow
-
-Inputs are reshaped from the existing tabular feature pipeline into a
-per-station tensor of shape (batch, n_stations, features_per_station). The
-seven features per station are:
-
-    [t0, lag1, lag2, lag3, rolling_mean_3h, rolling_std_3h, diff1]
-
-The autoregressive lag tensor takes the last 6 readings of Dhompo (3 h of
-30-minute history). Targets are Dhompo water level at h+1..h+5 hours.
 """
 
 from __future__ import annotations
@@ -41,6 +23,11 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from dhompo.data.loader import load_data
+from dhompo.data.synthesis import (
+    AugmentationConfig,
+    AugmentationSchedule,
+    SyntheticAugmenter,
+)
 from dhompo.data.tier_a_features import (
     AR_LAG_DIM,
     FEATURES_PER_STATION,
@@ -56,6 +43,9 @@ from dhompo.training.sensor_dropout import (
     apply_sensor_dropout,
 )
 
+AUTO_TIGHTEN_THRESHOLD: float = 0.30
+AUTO_TIGHTEN_FACTOR: float = 0.20
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("tier_a")
 
@@ -67,13 +57,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--mlflow", action="store_true",
-                    help="Log run to MLflow (skip for smoke tests).")
+                    help="Log run ke MLflow (skip untuk smoke test).")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--data", default=None,
-                    help="Override path to data-clean.csv.")
+                    help="Override path ke data-clean.csv.")
     p.add_argument("--checkpoint-dir", default=None,
-                    help="Where to write best.pt + normalizer.pkl. "
-                         "Defaults to artifacts/tier_a_adaptive/.")
+                    help="Lokasi tulis best.pt + normalizer.pkl. "
+                         "Default: artifacts/tier_a_adaptive/.")
+    p.add_argument("--no-synthesis", action="store_true",
+                    help="Matikan augmenter sintetis basin-coherent "
+                         "untuk run ablasi.")
     return p.parse_args()
 
 
@@ -90,7 +83,7 @@ def assemble_tensors(df: pd.DataFrame):
     feats = feats[valid]
     ar = ar[valid]
     y = y[valid]
-    aux_y = feats[:, :, 0]  # auxiliary target = each station's t0 value
+    aux_y = feats[:, :, 0]  # target auxiliary = nilai t0 tiap stasiun
     mask = np.ones((feats.shape[0], feats.shape[1]), dtype=bool)
     return (
         torch.from_numpy(feats),
@@ -109,14 +102,29 @@ def temporal_split(*tensors, train_frac: float = 0.8):
     return train, test
 
 
-def train_one_epoch(model, loader, loss_fn, optimiser, device, schedule):
+def train_one_epoch(
+    model, loader, loss_fn, optimiser, device, schedule, normalizer, augmenter,
+):
+    """Satu pass training loader; mengembalikan rata-rata loss + hitungan aug."""
     model.train()
     totals = {"total": 0.0, "main": 0.0, "aux": 0.0}
     n_batches = 0
-    for feats, mask, ar, y, aux_y in loader:
-        feats = feats.to(device); mask = mask.to(device); ar = ar.to(device)
+    n_attempted = 0
+    n_rejected = 0
+    for feats_raw, mask, ar_raw, y, aux_y in loader:
+        feats_raw = feats_raw.to(device); mask = mask.to(device)
+        ar_raw = ar_raw.to(device)
         y = y.to(device); aux_y = aux_y.to(device)
         target_h1 = y[:, 0]
+
+        if augmenter is not None:
+            feats_raw, ar_raw, _, stats = augmenter.augment(
+                feats_raw, ar_raw, target_h1,
+            )
+            n_attempted += stats.n_attempted
+            n_rejected += stats.n_rejected
+
+        feats, ar = normalizer.apply(feats_raw, ar_raw)
         feats_aug, mask_aug = apply_sensor_dropout(
             feats, mask, target_h1, schedule=schedule,
         )
@@ -128,17 +136,25 @@ def train_one_epoch(model, loader, loss_fn, optimiser, device, schedule):
         for k in totals:
             totals[k] += out[k].item()
         n_batches += 1
-    return {k: v / max(n_batches, 1) for k, v in totals.items()}
+    metrics = {k: v / max(n_batches, 1) for k, v in totals.items()}
+    metrics["aug_attempted"] = n_attempted
+    metrics["aug_rejected"] = n_rejected
+    metrics["aug_rejection_rate"] = (
+        n_rejected / n_attempted if n_attempted > 0 else 0.0
+    )
+    return metrics
 
 
 @torch.no_grad()
-def evaluate(model, loader, loss_fn, device):
+def evaluate(model, loader, loss_fn, device, normalizer):
     model.eval()
     totals = {"total": 0.0, "main": 0.0, "aux": 0.0}
     n_batches = 0
-    for feats, mask, ar, y, aux_y in loader:
-        feats = feats.to(device); mask = mask.to(device); ar = ar.to(device)
+    for feats_raw, mask, ar_raw, y, aux_y in loader:
+        feats_raw = feats_raw.to(device); mask = mask.to(device)
+        ar_raw = ar_raw.to(device)
         y = y.to(device); aux_y = aux_y.to(device)
+        feats, ar = normalizer.apply(feats_raw, ar_raw)
         pred_h, pred_aux = model(feats, mask, ar)
         out = loss_fn(pred_h, y, pred_aux, aux_y)
         for k in totals:
@@ -165,8 +181,8 @@ def main() -> None:
         )
 
     normalizer = Normalizer.fit(tr_feats, tr_ar)
-    tr_feats, tr_ar = normalizer.apply(tr_feats, tr_ar)
-    te_feats, te_ar = normalizer.apply(te_feats, te_ar)
+    # Normalisasi dilakukan per batch supaya augmenter melihat nilai mentah
+    # (jitter sigma didefinisikan dalam satuan tinggi muka air mentah).
 
     train_ds = TensorDataset(tr_feats, tr_mask, tr_ar, tr_y, tr_aux)
     test_ds = TensorDataset(te_feats, te_mask, te_ar, te_y, te_aux)
@@ -179,6 +195,24 @@ def main() -> None:
     loss_fn = CompositeLoss(LossConfig())
     optimiser = torch.optim.Adam(model.parameters(), lr=args.lr)
     schedule = DropoutSchedule()
+
+    if args.no_synthesis:
+        augmenter = None
+        log.info("Synthetic augmenter DISABLED via --no-synthesis.")
+    else:
+        station_std = tr_feats[:, :, 0].std(dim=0).clamp(min=1e-6)
+        training_max = tr_feats[:, :, 0].max(dim=0).values
+        augmenter = SyntheticAugmenter(
+            station_std=station_std,
+            training_max=training_max,
+            schedule=AugmentationSchedule(),
+            config=AugmentationConfig(),
+        )
+        log.info(
+            "Synthetic augmenter enabled (sigma=%.4f, scale=[%.2f,%.2f]).",
+            augmenter.config.jitter_sigma_pct,
+            augmenter.config.scale_low, augmenter.config.scale_high,
+        )
 
     ckpt_dir = Path(args.checkpoint_dir) if args.checkpoint_dir \
         else PROJECT_ROOT / "artifacts" / "tier_a_adaptive"
@@ -206,14 +240,26 @@ def main() -> None:
         for epoch in range(args.epochs):
             tr_metrics = train_one_epoch(
                 model, train_loader, loss_fn, optimiser, args.device, schedule,
+                normalizer, augmenter,
             )
-            te_metrics = evaluate(model, test_loader, loss_fn, args.device)
+            te_metrics = evaluate(
+                model, test_loader, loss_fn, args.device, normalizer,
+            )
             log.info(
                 "epoch=%d train_total=%.4f train_main=%.4f train_aux=%.4f "
-                "test_total=%.4f test_main=%.4f",
+                "test_total=%.4f test_main=%.4f aug_rate=%.2f%%",
                 epoch, tr_metrics["total"], tr_metrics["main"], tr_metrics["aux"],
                 te_metrics["total"], te_metrics["main"],
+                100.0 * tr_metrics["aug_rejection_rate"],
             )
+            if augmenter is not None and tr_metrics["aug_rejection_rate"] > AUTO_TIGHTEN_THRESHOLD:
+                new_cfg = augmenter.tighten(AUTO_TIGHTEN_FACTOR)
+                log.info(
+                    "  auto-tighten triggered (rate=%.2f%%): sigma=%.4f scale=[%.3f,%.3f]",
+                    100.0 * tr_metrics["aug_rejection_rate"],
+                    new_cfg.jitter_sigma_pct,
+                    new_cfg.scale_low, new_cfg.scale_high,
+                )
             if te_metrics["main"] < best_test_main:
                 best_test_main = te_metrics["main"]
                 torch.save({"model_state": model.state_dict(),
@@ -230,6 +276,13 @@ def main() -> None:
                 mlflow.log_metrics({
                     f"test_{k}": v for k, v in te_metrics.items()
                 }, step=epoch)
+                if augmenter is not None:
+                    aug_cfg = augmenter.config
+                    mlflow.log_metrics({
+                        "synthesis_jitter_sigma_pct": aug_cfg.jitter_sigma_pct,
+                        "synthesis_scale_low": aug_cfg.scale_low,
+                        "synthesis_scale_high": aug_cfg.scale_high,
+                    }, step=epoch)
     finally:
         if run_ctx is not None:
             import mlflow

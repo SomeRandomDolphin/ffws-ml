@@ -1,10 +1,4 @@
-"""Composite loss for Tier-A: peak-weighted main + auxiliary station heads.
-
-ARCHITECTURE.md section 3.4 specifies main loss x 1.0 plus 0.1 per auxiliary
-station head, summed. The main loss reuses the W1_moderate sample-weighting
-scheme from ``training/run_peak_weighted_experiment.py`` so the new training
-pipeline inherits the diagnosed flood-peak fix.
-"""
+"""Loss komposit peak-weighted + auxiliary-head untuk training Tier-A."""
 
 from __future__ import annotations
 
@@ -33,11 +27,7 @@ def peak_weighted_mse(
     target: torch.Tensor,
     config: LossConfig | None = None,
 ) -> torch.Tensor:
-    """Peak-weighted MSE over a (batch, horizons) prediction tensor.
-
-    The W1_moderate scheme from the existing peak-weighted experiment:
-    weight = 1 normally, 3 in the elevated band, 10 inside the flood band.
-    """
+    """MSE berbobot peak: bobot 1 normal, 3 elevated, 10 banjir."""
     if config is None:
         config = LossConfig()
     sq = (pred - target) ** 2
@@ -50,7 +40,7 @@ def peak_weighted_mse(
 
 
 class CompositeLoss(nn.Module):
-    """Sum of peak-weighted main loss and unweighted auxiliary station loss."""
+    """Jumlah loss utama (peak-weighted) dan loss auxiliary stasiun tanpa bobot."""
 
     def __init__(self, config: LossConfig | None = None) -> None:
         super().__init__()

@@ -1,10 +1,4 @@
-"""Quality-flag detectors for sensor time-series.
-
-Six flag values: ``OK``, ``STUCK``, ``FLATLINE``, ``OUT_OF_RANGE``, ``MISSING``,
-``STALE``. Detectors operate on a wide DataFrame (one column per station,
-DatetimeIndex on a 30-minute grid) and emit a parallel flag DataFrame of the
-same shape. Detection is fully deterministic and replayable.
-"""
+"""Detektor quality-flag untuk deret waktu sensor."""
 
 from __future__ import annotations
 
@@ -38,7 +32,7 @@ BAD_FLAGS: frozenset[QualityFlag] = frozenset(
 
 @dataclass(frozen=True)
 class QualityConfig:
-    """Detector thresholds — see ARCHITECTURE.md section 4 for rationale."""
+    """Ambang batas detektor."""
 
     flatline_window: int = 6
     flatline_var_threshold: float = 1e-4
@@ -147,7 +141,7 @@ def _detect_stale(
 def _apply_hysteresis(
     sticky_flag: pd.DataFrame, config: QualityConfig
 ) -> pd.DataFrame:
-    """Once True, stay True until ``hysteresis_clear_count`` False readings."""
+    """Setelah True, tetap True sampai ``hysteresis_clear_count`` reading False berturut-turut."""
     out = sticky_flag.copy()
     clear_required = config.hysteresis_clear_count
     for station in out.columns:
@@ -175,23 +169,8 @@ def compute_quality_flags(
     config: QualityConfig | None = None,
     reference_time: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
-    """Compute per-station quality flags across the full history.
-
-    Parameters
-    ----------
-    values:
-        Wide DataFrame, one column per station, DatetimeIndex sorted ascending.
-    config:
-        Detector thresholds. Defaults to ``DEFAULT_CONFIG``.
-    reference_time:
-        "Now" timestamp for staleness computation. Defaults to ``values.index.max()``.
-
-    Returns
-    -------
-    DataFrame
-        Same shape as ``values``, dtype object, each cell a ``QualityFlag`` value.
-        Precedence: ``MISSING`` > ``OUT_OF_RANGE`` > ``STALE`` > ``STUCK`` > ``FLATLINE`` > ``OK``.
-    """
+    """Hitung quality flag per-stasiun di seluruh riwayat."""
+    # Prioritas: MISSING > OUT_OF_RANGE > STALE > STUCK > FLATLINE > OK.
     if config is None:
         config = DEFAULT_CONFIG
     if values.empty:

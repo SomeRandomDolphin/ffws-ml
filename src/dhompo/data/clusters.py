@@ -1,8 +1,4 @@
-"""Hydrological clustering of basin stations.
-
-Authoritative source: ``reports/figures/diagram-alir.png``. The basin has two
-parallel tributaries that converge at Dhompo, plus a short downstream tail.
-"""
+"""Klaster hidrologis stasiun pada basin."""
 
 from __future__ import annotations
 
@@ -59,7 +55,7 @@ def cluster_of(station: str) -> str:
     for name, members in CLUSTERS.items():
         if station in members:
             return name
-    raise KeyError(f"Station '{station}' is not a member of any cluster.")
+    raise KeyError(f"Stasiun '{station}' bukan anggota klaster manapun.")
 
 
 def is_telemetry(station: str) -> bool:

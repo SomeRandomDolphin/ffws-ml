@@ -1,14 +1,4 @@
-"""Z-score normalizer for Tier-A per-station features and AR lag tensor.
-
-Targets and auxiliary targets are intentionally NOT normalized — the
-peak-weighted loss thresholds (7.0 elevated, 9.0 flood) are expressed in raw
-water-level units, and station-t0 aux targets need to stay comparable to
-predictions emitted in raw units at inference time.
-
-Persisted as a pickle alongside the model checkpoint and re-loaded by the
-serving predictor; do not change the field names without bumping the artifact
-contract.
-"""
+"""Normalizer z-score untuk fitur per-stasiun dan tensor AR lag Tier-A."""
 
 from __future__ import annotations
 
