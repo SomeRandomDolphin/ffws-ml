@@ -1,14 +1,4 @@
-"""Per-station feature builders for the Tier-A adaptive model.
-
-Shared by the training loop and the serving predictor so the on-disk feature
-contract has exactly one definition. The seven features per station match the
-training contract documented in ``training/run_tier_a_adaptive.py``:
-
-    [t0, lag1, lag2, lag3, rolling_mean_3h, rolling_std_3h, diff1]
-
-The autoregressive lag tensor takes the last ``AR_LAG_DIM`` readings of the
-target station (Dhompo), shift 0..AR_LAG_DIM-1.
-"""
+"""Builder fitur per-stasiun yang dipakai bersama oleh training dan serving Tier-A."""
 
 from __future__ import annotations
 
@@ -27,11 +17,8 @@ _ROLLING_WINDOW: int = 6
 def build_per_station_features(
     df: pd.DataFrame, stations: list[str] | tuple[str, ...] = tuple(ALL_STATIONS),
 ) -> np.ndarray:
-    """Reshape sensor history into (n_timesteps, n_stations, features_per_station).
-
-    Missing stations in the input DataFrame are zero-filled and downstream
-    callers are expected to mask them out via the model's mask tensor.
-    """
+    """Reshape riwayat sensor menjadi (n_timesteps, n_stations, features_per_station)."""
+    # Stasiun yang hilang diisi nol; pemanggil wajib mask-out lewat mask tensor.
     n_steps = len(df)
     n_stations = len(stations)
     out = np.zeros((n_steps, n_stations, FEATURES_PER_STATION), dtype=np.float32)
@@ -52,14 +39,14 @@ def build_per_station_features(
 
 
 def build_ar_lags(df: pd.DataFrame, target: str = TARGET_STATION) -> np.ndarray:
-    """Stack shift(0..AR_LAG_DIM-1) of the target column into (n_timesteps, AR_LAG_DIM)."""
+    """Susun shift(0..AR_LAG_DIM-1) dari kolom target menjadi (n_timesteps, AR_LAG_DIM)."""
     series = df[target]
     lags = np.stack([series.shift(i).to_numpy() for i in range(AR_LAG_DIM)], axis=-1)
     return lags.astype(np.float32)
 
 
 def build_targets(df: pd.DataFrame, target: str = TARGET_STATION) -> np.ndarray:
-    """Stack h+1..h+5 hour targets into (n_timesteps, 5)."""
+    """Susun target h+1..h+5 jam menjadi (n_timesteps, 5)."""
     series = df[target]
     horizons = [
         series.shift(-h * HORIZON_STEPS_PER_HOUR).to_numpy()
