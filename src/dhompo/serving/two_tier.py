@@ -1,18 +1,4 @@
-"""Two-tier adaptive predictor.
-
-Tier-A is the adaptive 14-station model used in normal operation. Tier-B is the
-Dhompo-only autoregressive floor used when all three telemetry stations carry
-bad quality flags simultaneously. See ARCHITECTURE.md sections 3, 5, and 9 for
-the routing rules and the fallback contract.
-
-Phase 1 scaffolding notes
--------------------------
-- Tier-A is wrapped around the existing :class:`FilePredictor`; the proper
-  embedding + cluster + masking architecture lands in Phase 2.
-- Tier-B is a persistence baseline (predict the most recent Dhompo level for
-  all five horizons) until a dedicated AR model is trained. This is sufficient
-  to exercise the routing contract and observability surface end-to-end.
-"""
+"""Predictor dua-tier: Tier-A normal, Tier-B fallback saat telemetri mati."""
 
 from __future__ import annotations
 
@@ -44,10 +30,10 @@ class HorizonPredictor(Protocol):
 
 @dataclass
 class RoutedPrediction:
-    """Result of a routed two-tier prediction."""
+    """Hasil prediksi dua-tier yang sudah di-route beserta metadata degradasi."""
 
     predictions: dict[str, float]
-    serving_tier: str  # "A" or "B"
+    serving_tier: str  # "A" atau "B"
     degradation: dict[str, str]
     shadow_predictions: dict[str, float] | None
     quality_flags: dict[str, str]
@@ -56,12 +42,7 @@ class RoutedPrediction:
 
 
 class PersistenceTierB:
-    """Tier-B floor: forecast = last observed Dhompo level for every horizon.
-
-    Trivial baseline that always works on Dhompo's own history alone — the
-    "lights-on" guarantee when all telemetry is dark. To be replaced by a
-    trained AR-only model in a follow-up phase.
-    """
+    """Floor Tier-B: forecast = nilai Dhompo terakhir untuk semua horizon."""
 
     @property
     def backend_name(self) -> str:
@@ -85,7 +66,7 @@ class PersistenceTierB:
 
 
 class TwoTierPredictor:
-    """Routes predictions between Tier-A and Tier-B based on telemetry health."""
+    """Route prediksi antara Tier-A dan Tier-B berdasarkan kesehatan telemetri."""
 
     def __init__(
         self,
@@ -99,8 +80,7 @@ class TwoTierPredictor:
 
     @property
     def backend_name(self) -> str:
-        # Proxy Tier-A's backend name so artifact-source telemetry stays stable.
-        # The two-tier distinction is exposed via PredictResponse.serving_tier.
+        # Proxy nama Tier-A; pembeda tier ada di PredictResponse.serving_tier.
         return getattr(self._tier_a, "backend_name", "file")
 
     def model_mapping(self) -> dict[str, str]:
@@ -152,10 +132,7 @@ class TwoTierPredictor:
         )
 
     def predict_from_history(self, history: pd.DataFrame) -> PredictionResult:
-        """Backward-compatible point-prediction API.
-
-        Existing callers that don't yet consume the routed metadata still work.
-        """
+        """API prediksi titik tanpa metadata routing."""
         routed = self.route(history)
         return PredictionResult(
             predictions=routed.predictions,
