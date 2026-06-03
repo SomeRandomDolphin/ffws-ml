@@ -28,7 +28,7 @@ models/pytorch/*.pkl
 output_eda/
 
 # Data
-/data/
+# /data/
 /artifacts/
 
 # Reports & docs (binary/generated)
