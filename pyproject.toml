@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "dhompo"
 version = "0.1.0"
 description = "Time-series based multi-horizon water level prediction system for Sungai Dhompo flood early warning"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.0",
     "numpy>=1.24",
@@ -47,3 +47,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+pythonpath = [
+    "src",
+    ".",
+]

@@ -21,7 +21,7 @@ Sistem prediksi tinggi muka air Sungai Dhompo berbasis deret waktu untuk kebutuh
 
 ## Instalasi
 
-Repository ini memakai layout `src/`, jadi instalasi yang direkomendasikan untuk development adalah editable install.
+Repository ini memakai layout `src/`, jadi instalasi yang direkomendasikan untuk development adalah editable install. Python yang didukung adalah `>=3.10`.
 
 1. Buat virtual environment:
 
@@ -40,13 +40,13 @@ python -m venv .venv
 Untuk development, testing, dan training:
 
 ```bash
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 ```
 
 Untuk runtime minimum API saja:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 Catatan:
@@ -155,7 +155,7 @@ Untuk backend `tier_a_adaptive`, install dependency tambahan dan pastikan
 artefak tersedia:
 
 ```bash
-pip install -r requirements-torch.txt
+python -m pip install -r requirements-torch.txt
 python training/run_tier_a_adaptive.py
 ```
 
@@ -333,7 +333,7 @@ Penting:
 Setelah editable install:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 Alternatif via Makefile:
@@ -370,7 +370,10 @@ Validasi request:
 
 | Masalah | Penyebab umum | Solusi |
 |---------|----------------|--------|
-| `ModuleNotFoundError: dhompo` saat test | package belum terpasang editable | jalankan `pip install -e ".[dev]"` |
+| `ModuleNotFoundError: dhompo` saat test | package belum terpasang editable | jalankan `python -m pip install -e ".[dev]"` |
+| `ModuleNotFoundError: dhompo` tetap muncul setelah install | pytest tidak membaca layout `src/` atau command dijalankan dari direktori lain | jalankan dari root repo dengan `python -m pytest ...`; konfigurasi pytest sudah menambahkan `src/` ke path |
+| `pytest: command not found` | dependency test belum terinstall atau shell tidak memakai venv | jalankan `python -m pip install -e ".[dev]"`, lalu `python -m pytest -q` |
+| `Package 'dhompo' requires a different Python` | versi Python venv tidak sesuai constraint package | gunakan Python `>=3.10`, lalu reinstall package |
 | `/predict` gagal karena feature names mismatch | artefak model tidak cocok dengan konfigurasi fitur inferensi | samakan konfigurasi feature engineering atau latih ulang model |
 | scaler/model file tidak ditemukan | artefak lokal belum tersedia | pastikan isi `models/sklearn/` lengkap |
 | `/health` mengembalikan `503` | backend/model gagal dimuat saat startup | cek `PREDICTOR_BACKEND`, artefak model, dan `MLFLOW_TRACKING_URI` |

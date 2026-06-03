@@ -35,7 +35,6 @@ output_eda/
 /reports/
 /docs/*
 !/docs/ARCHITECTURE.md
-!/docs/TIER_A_ADAPTIVE_BACKEND_INTEGRATION.md
 
 # Local/generated utility scripts
 /scripts/
