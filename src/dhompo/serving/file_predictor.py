@@ -19,11 +19,11 @@ class PredictionResult:
 
 # Model terbaik per horizon (dari xls_11_model_metrics.xlsx)
 BEST_MODEL_FILES: dict[int, str] = {
-    1: "xgboost_h1.pkl",
-    2: "gradient_boosting_h2.pkl",
-    3: "gradient_boosting_h3.pkl",
-    4: "lasso_alpha001_h4.pkl",
-    5: "lasso_alpha001_h5.pkl",
+    1: "model_xgboost_h1.pkl",
+    2: "model_gradient_boosting_h2.pkl",
+    3: "model_gradient_boosting_h3.pkl",
+    4: "model_lasso_l1_h4.pkl",
+    5: "model_lasso_l1_h5.pkl",
 }
 
 # Model yang butuh fitur di-scale sebelum predict (linear models)

@@ -94,7 +94,7 @@ class PredictResponse(BaseModel):
     models: dict[str, str] = Field(
         ...,
         description="Model identifier used per horizon (filename or MLflow registry URI).",
-        examples=[{"h1": "xgboost_h1.pkl"}],
+        examples=[{"h1": "model_xgboost_h1.pkl"}],
     )
     timestamp: datetime = Field(..., description="Last observation timestamp")
     prediction_time: datetime = Field(..., description="Server time of prediction")
