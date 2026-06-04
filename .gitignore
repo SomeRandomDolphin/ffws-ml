@@ -22,6 +22,11 @@ catboost_info/
 serving/torchserve/model_store/
 models/sklearn/*.pkl
 models/pytorch/*.pkl
+!models/sklearn/model_xgboost_h1.pkl
+!models/sklearn/model_gradient_boosting_h2.pkl
+!models/sklearn/model_gradient_boosting_h3.pkl
+!models/sklearn/model_lasso_l1_h4.pkl
+!models/sklearn/model_lasso_l1_h5.pkl
 
 # Notebooks
 .ipynb_checkpoints/
