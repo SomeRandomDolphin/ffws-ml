@@ -1,4 +1,4 @@
-"""Shared evaluation metrics for Dhompo flood forecasting.
+"""Shared evaluation metrics for Dhompo and Surabaya water-level forecasting.
 
 Ported from research/create_02_modeling.py — calc_metrics().
 
