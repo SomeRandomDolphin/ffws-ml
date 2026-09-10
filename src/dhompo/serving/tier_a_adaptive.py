@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from dhompo.config import PROJECT_ROOT
 from dhompo.data.loader import ALL_STATIONS
 from dhompo.data.tier_a_features import (
     AR_LAG_DIM,
@@ -27,7 +28,7 @@ from dhompo.etl.quality import (
 from dhompo.serving.file_predictor import PredictionResult
 
 _BAD_FLAG_VALUES: frozenset[str] = frozenset(f.value for f in BAD_FLAGS)
-_DEFAULT_CHECKPOINT_DIR = Path(__file__).parents[3] / "artifacts" / "tier_a_adaptive"
+_DEFAULT_CHECKPOINT_DIR = PROJECT_ROOT / "artifacts" / "tier_a_adaptive"
 
 
 @dataclass(frozen=True)
@@ -67,7 +68,7 @@ class TierAAdaptivePredictor:
         if not self._artifacts.checkpoint.exists():
             raise FileNotFoundError(
                 f"Tier-A checkpoint missing: {self._artifacts.checkpoint}. "
-                "Run `python training/run_tier_a_adaptive.py` first."
+                "Run `python training/dhompo/run_tier_a_adaptive.py` first."
             )
         if not self._artifacts.normalizer.exists():
             raise FileNotFoundError(

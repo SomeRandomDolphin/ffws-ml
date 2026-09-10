@@ -19,6 +19,7 @@ import mlflow.sklearn
 import numpy as np
 import pandas as pd
 
+from dhompo.config import PROJECT_ROOT
 from dhompo.data.features import build_forecast_features
 from dhompo.data.loader import TARGET_STATION, UPSTREAM_STATIONS
 from dhompo.serving.file_predictor import SCALED_HORIZONS
@@ -63,7 +64,7 @@ class SklearnPredictor:
         self._scaler_path = (
             Path(scaler_path)
             if scaler_path is not None
-            else Path(__file__).parents[3] / "models" / "sklearn" / "scaler.pkl"
+            else PROJECT_ROOT / "models" / "sklearn" / "scaler.pkl"
         )
         self._scaler = None
 

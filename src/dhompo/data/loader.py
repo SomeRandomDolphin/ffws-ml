@@ -7,6 +7,8 @@ from typing import NamedTuple
 
 import pandas as pd
 
+from dhompo.config import PROJECT_ROOT
+
 # Canonical station ordering (elevation descending)
 STATION_META: dict[str, tuple[float, int]] = {
     "Bd. Suwoto":      (503,  1),
@@ -43,7 +45,7 @@ UPSTREAM_STATIONS: list[str] = [
 ALL_STATIONS: list[str] = list(STATION_META.keys())
 TARGET_STATION: str = "Dhompo"
 
-_DEFAULT_DATA_PATH = Path(__file__).parents[4] / "data" / "data-clean.csv"
+_DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "data-clean.csv"
 
 # Mapping from generated-data column names → canonical names
 GENERATED_COLUMN_MAP: dict[str, str] = {

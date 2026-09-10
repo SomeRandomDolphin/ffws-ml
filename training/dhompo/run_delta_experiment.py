@@ -14,8 +14,8 @@ Perbandingan ABS vs DELTA dilakukan pada pipeline identik:
 
 Usage
 -----
-    python training/run_delta_experiment.py
-    python training/run_delta_experiment.py --save-models
+    python training/dhompo/run_delta_experiment.py
+    python training/dhompo/run_delta_experiment.py --save-models
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -63,7 +63,7 @@ def _prepare_data(train_cfg: dict, include_rainfall: bool = True):
     data_sources = train_cfg["data_sources"]
     source_paths = {}
     for src in data_sources:
-        resolved = resolve_path_from_config("configs/training.yaml", src["path"])
+        resolved = resolve_path_from_config("configs/dhompo/training.yaml", src["path"])
         source_paths[src["label"]] = resolved
 
     segments = load_combined_data(
@@ -207,8 +207,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    train_cfg = load_yaml_config("configs/training.yaml")
-    model_cfg = load_yaml_config("configs/sklearn_model.yaml")
+    train_cfg = load_yaml_config("configs/dhompo/training.yaml")
+    model_cfg = load_yaml_config("configs/shared/sklearn_model.yaml")
     include_rainfall = not args.no_rainfall
 
     print("=" * 70)
@@ -251,7 +251,7 @@ def main() -> None:
 
     # Combine + save
     results_df = pd.concat([df_abs, df_delta], ignore_index=True)
-    out_path = PROJECT_ROOT / "reports" / "tables" / "experiment_delta_vs_abs.xlsx"
+    out_path = PROJECT_ROOT / "reports" / "dhompo" / "tables" / "experiment_delta_vs_abs.xlsx"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     results_df.to_excel(out_path, index=False)
 

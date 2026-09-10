@@ -14,35 +14,31 @@ mlruns/
 mlartifacts/
 catboost_info/
 
-# Model artifacts
+# Model artifacts (existing tracked files remain tracked)
 *.joblib
 *.pt
 *.pth
 *.mar
 serving/torchserve/model_store/
-models/sklearn/*.pkl
-models/pytorch/*.pkl
-!models/sklearn/model_xgboost_h1.pkl
-!models/sklearn/model_gradient_boosting_h2.pkl
-!models/sklearn/model_gradient_boosting_h3.pkl
-!models/sklearn/model_lasso_l1_h4.pkl
-!models/sklearn/model_lasso_l1_h5.pkl
+/models/**/*
+!/models/README.md
 
 # Notebooks
 .ipynb_checkpoints/
 output_eda/
 
-# Data
-# /data/
+# Data (existing tracked Dhompo files remain tracked)
+/data/**/*
+!/data/README.md
 /artifacts/
 
-# Reports & docs (binary/generated)
-/reports/
-/docs/*
-!/docs/ARCHITECTURE.md
-
-# Local/generated utility scripts
-/scripts/
+# Reports and document exports are local; their Markdown guides are source.
+/reports/**/*
+!/reports/**/
+!/reports/**/*.md
+/docs/**/*.docx
+/docs/**/*.rtf
+/docs/.word_build/
 
 # IDE
 .idea/
@@ -62,7 +58,6 @@ logs/
 
 # MkDocs
 site/
-mkdocs.yml
 
 # Project notes 
 DEV_NOTES.md

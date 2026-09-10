@@ -2,12 +2,12 @@
 
 Usage
 -----
-    python training/tune_optuna.py
-    python training/tune_optuna.py --model xgboost --horizon 4
-    python training/tune_optuna.py --all-models --all-horizons
+    python training/dhompo/tune_optuna.py
+    python training/dhompo/tune_optuna.py --model xgboost --horizon 4
+    python training/dhompo/tune_optuna.py --all-models --all-horizons
 
 Performs Bayesian optimization using Optuna with TimeSeriesSplit cross-validation.
-Best hyperparameters are saved to configs/best_params/ and logged to MLflow.
+Best hyperparameters are saved to configs/dhompo/best_params/ and logged to MLflow.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import json
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -301,7 +301,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Optuna hyperparameter tuning")
     parser.add_argument(
         "--train-config",
-        default="configs/training.yaml",
+        default="configs/dhompo/training.yaml",
         help="Path to training config YAML",
     )
     parser.add_argument(
@@ -329,7 +329,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        default="configs/best_params",
+        default="configs/dhompo/best_params",
         help="Directory to save best parameters",
     )
     return parser.parse_args()

@@ -1,28 +1,36 @@
-.PHONY: train-sklearn up down test mlflow-ui install install-dev
+.PHONY: train-sklearn train-dhompo train-surabaya check-surabaya up down test test-features test-models test-api mlflow-ui install install-dev docs
 
 # Training
-train-sklearn:
-	python training/train_sklearn.py --config configs/sklearn_model.yaml
+train-sklearn: train-dhompo
+
+train-dhompo:
+	python training/dhompo/train_sklearn.py --config configs/shared/sklearn_model.yaml
+
+train-surabaya:
+	python training/surabaya/train_urban_sklearn.py --models ridge
+
+check-surabaya:
+	python training/surabaya/train_urban_sklearn.py --dry-run
 
 # Docker
 up:
-	docker-compose up --build -d
+	docker compose up --build -d
 
 down:
-	docker-compose down
+	docker compose down
 
 # Testing
 test:
-	pytest tests/ -v
+	python -m pytest tests/ -v
 
 test-features:
-	pytest tests/test_features.py -v
+	python -m pytest tests/test_urban_features.py tests/test_config_paths.py -v
 
 test-models:
-	pytest tests/test_sklearn_models.py -v
+	python -m pytest tests/test_file_predictor.py tests/test_urban_file_predictor.py -v
 
 test-api:
-	pytest tests/test_api.py -v
+	python -m pytest tests/test_api.py -v
 
 # MLflow
 mlflow-ui:
@@ -34,3 +42,6 @@ install:
 
 install-dev:
 	pip install -e ".[dev]"
+
+docs:
+	python -m mkdocs build --strict

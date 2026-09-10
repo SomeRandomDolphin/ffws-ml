@@ -8,6 +8,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
+from dhompo.config import PROJECT_ROOT
 from dhompo.data.features import build_forecast_features
 
 
@@ -30,8 +31,7 @@ BEST_MODEL_FILES: dict[int, str] = {
 SCALED_HORIZONS: set[int] = {4, 5}  # Lasso
 SCALER_FILENAME = "scaler.pkl"
 
-# parents[3] = project root (src/dhompo/serving/ → src/dhompo/ → src/ → root)
-_DEFAULT_MODEL_DIR = Path(__file__).parents[3] / "models" / "sklearn"
+_DEFAULT_MODEL_DIR = PROJECT_ROOT / "models" / "sklearn"
 
 
 class FilePredictor:

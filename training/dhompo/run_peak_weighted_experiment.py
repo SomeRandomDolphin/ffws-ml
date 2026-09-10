@@ -21,8 +21,8 @@ Evaluation
 
 Usage
 -----
-    python training/run_peak_weighted_experiment.py
-    python training/run_peak_weighted_experiment.py --schemes W0_uniform W1_moderate
+    python training/dhompo/run_peak_weighted_experiment.py
+    python training/dhompo/run_peak_weighted_experiment.py --schemes W0_uniform W1_moderate
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -43,7 +43,7 @@ from sklearn.preprocessing import StandardScaler
 from dhompo.config import load_yaml_config
 from dhompo.models.sklearn_models import HORIZONS, get_model_definitions
 from training.evaluate import calc_metrics
-from training.flood_event_cv import (
+from training.dhompo.flood_event_cv import (
     _prepare_features_and_targets,
     detect_major_floods,
     peak_weighted_rmse,
@@ -196,8 +196,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    train_cfg = load_yaml_config("configs/training.yaml")
-    model_cfg = load_yaml_config("configs/sklearn_model.yaml")
+    train_cfg = load_yaml_config("configs/dhompo/training.yaml")
+    model_cfg = load_yaml_config("configs/shared/sklearn_model.yaml")
     horizons = args.horizons or train_cfg.get("horizons", HORIZONS)
 
     t0 = time.time()
@@ -234,8 +234,8 @@ def main() -> None:
     normops_df = pd.DataFrame(normops_rows)
 
     # Save
-    out_flood = PROJECT_ROOT / "reports" / "tables" / "peak_weighted_flood_cv.xlsx"
-    out_norm = PROJECT_ROOT / "reports" / "tables" / "peak_weighted_normops.xlsx"
+    out_flood = PROJECT_ROOT / "reports" / "dhompo" / "tables" / "peak_weighted_flood_cv.xlsx"
+    out_norm = PROJECT_ROOT / "reports" / "dhompo" / "tables" / "peak_weighted_normops.xlsx"
     flood_df.to_excel(out_flood, index=False)
     normops_df.to_excel(out_norm, index=False)
 

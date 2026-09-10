@@ -13,7 +13,7 @@ def _normalize_output_path(path: str | Path) -> Path:
         output = output.with_suffix(".png")
 
     if output.parent == Path("."):
-        output = _project_root() / "reports" / "figures" / output.name
+        output = _project_root() / "reports" / "dhompo" / "figures" / output.name
 
     output.parent.mkdir(parents=True, exist_ok=True)
     return output

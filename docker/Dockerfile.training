@@ -9,6 +9,9 @@ RUN python -m pip install --no-cache-dir \
     --trusted-host files.pythonhosted.org \
     -r requirements.txt
 
+# Training reads Excel sources and serializes sklearn models through skops.
+RUN python -m pip install --no-cache-dir "openpyxl>=3.1" skops
+
 COPY src/ ./src/
 COPY training/ ./training/
 COPY configs/ ./configs/
@@ -17,4 +20,4 @@ COPY data/ ./data/
 ENV PYTHONPATH="/app/src:/app"
 
 # Default: train sklearn models
-CMD ["python", "training/train_sklearn.py"]
+CMD ["python", "training/dhompo/train_sklearn.py"]

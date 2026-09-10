@@ -6,14 +6,14 @@ langsung menembus target.
 
 Usage
 -----
-    python training/diagnose_regime_errors.py
+    python training/dhompo/diagnose_regime_errors.py
 """
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -41,8 +41,8 @@ REGIMES = [
 
 
 def main() -> None:
-    train_cfg = load_yaml_config("configs/training.yaml")
-    model_cfg = load_yaml_config("configs/sklearn_model.yaml")
+    train_cfg = load_yaml_config("configs/dhompo/training.yaml")
+    model_cfg = load_yaml_config("configs/shared/sklearn_model.yaml")
     train_split = train_cfg.get("train_split", 0.8)
     horizons = train_cfg.get("horizons", HORIZONS)
     horizon_steps = {int(h): int(h) * 2 for h in horizons}
@@ -53,7 +53,7 @@ def main() -> None:
     source_paths = {}
     for src in train_cfg["data_sources"]:
         source_paths[src["label"]] = resolve_path_from_config(
-            "configs/training.yaml", src["path"]
+            "configs/dhompo/training.yaml", src["path"]
         )
     segments = load_combined_data(
         clean_path=source_paths["2022_clean"],
@@ -190,7 +190,7 @@ def main() -> None:
 
     # Save
     df = pd.DataFrame(rows)
-    out_path = PROJECT_ROOT / "reports" / "tables" / "diagnostic_regime_errors.xlsx"
+    out_path = PROJECT_ROOT / "reports" / "dhompo" / "tables" / "diagnostic_regime_errors.xlsx"
     df.to_excel(out_path, index=False)
 
     print("\n" + "=" * 72)

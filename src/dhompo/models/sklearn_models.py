@@ -26,7 +26,7 @@ def get_model_definitions(params: dict | None = None) -> dict[str, tuple]:
     Parameters
     ----------
     params:
-        Optional hyperparameter overrides loaded from configs/sklearn_model.yaml.
+        Optional hyperparameter overrides loaded from configs/shared/sklearn_model.yaml.
         Keys should match model names below.
 
     Returns

@@ -2,8 +2,8 @@
 
 Usage
 -----
-    python training/train_stacking.py
-    python training/train_stacking.py --horizon 4 5
+    python training/dhompo/train_stacking.py
+    python training/dhompo/train_stacking.py --horizon 4 5
 
 Implements a two-level stacking ensemble:
   Level-0: XGBoost, LightGBM, Ridge, Gradient Boosting (base learners)
@@ -22,7 +22,7 @@ import json
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -145,12 +145,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train stacking ensemble")
     parser.add_argument(
         "--config",
-        default="configs/sklearn_model.yaml",
+        default="configs/shared/sklearn_model.yaml",
         help="Path to sklearn hyperparameter config YAML",
     )
     parser.add_argument(
         "--train-config",
-        default="configs/training.yaml",
+        default="configs/dhompo/training.yaml",
         help="Path to training split config YAML",
     )
     parser.add_argument(

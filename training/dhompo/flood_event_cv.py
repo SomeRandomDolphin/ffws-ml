@@ -17,8 +17,8 @@ Metode
 
 Usage
 -----
-    python training/flood_event_cv.py
-    python training/flood_event_cv.py --model CatBoost --horizon 1
+    python training/dhompo/flood_event_cv.py
+    python training/dhompo/flood_event_cv.py --model CatBoost --horizon 1
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -99,7 +99,7 @@ def _prepare_features_and_targets(train_cfg: dict):
     source_paths = {}
     for src in train_cfg["data_sources"]:
         source_paths[src["label"]] = resolve_path_from_config(
-            "configs/training.yaml", src["path"]
+            "configs/dhompo/training.yaml", src["path"]
         )
     segments = load_combined_data(
         clean_path=source_paths["2022_clean"],
@@ -220,8 +220,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    train_cfg = load_yaml_config("configs/training.yaml")
-    model_cfg = load_yaml_config("configs/sklearn_model.yaml")
+    train_cfg = load_yaml_config("configs/dhompo/training.yaml")
+    model_cfg = load_yaml_config("configs/shared/sklearn_model.yaml")
     horizons = args.horizons or train_cfg.get("horizons", HORIZONS)
 
     t0 = time.time()
@@ -252,7 +252,7 @@ def main() -> None:
                   f"(err={r['peak_error']:+.3f})")
 
     df = pd.DataFrame(all_rows)
-    out_path = PROJECT_ROOT / "reports" / "tables" / "flood_event_cv.xlsx"
+    out_path = PROJECT_ROOT / "reports" / "dhompo" / "tables" / "flood_event_cv.xlsx"
     df.to_excel(out_path, index=False)
 
     # Aggregate per horizon
@@ -315,7 +315,7 @@ def main() -> None:
 
     # Save weighted metrics
     w_df = pd.DataFrame(w_rows)
-    w_out = PROJECT_ROOT / "reports" / "tables" / "peak_weighted_rmse.xlsx"
+    w_out = PROJECT_ROOT / "reports" / "dhompo" / "tables" / "peak_weighted_rmse.xlsx"
     w_df.to_excel(w_out, index=False)
 
     print(f"\nCompleted in {time.time()-t0:.1f}s")

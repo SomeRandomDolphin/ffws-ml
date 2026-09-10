@@ -2,10 +2,10 @@
 
 Usage
 -----
-    python training/train_sklearn.py
-    python training/train_sklearn.py --config configs/sklearn_model.yaml
-    python training/train_sklearn.py --experiment dhompo_combined
-    python training/train_sklearn.py --experiment dhompo_2022only --single-source 2022_clean
+    python training/dhompo/train_sklearn.py
+    python training/dhompo/train_sklearn.py --config configs/shared/sklearn_model.yaml
+    python training/dhompo/train_sklearn.py --experiment dhompo_combined
+    python training/dhompo/train_sklearn.py --experiment dhompo_2022only --single-source 2022_clean
 
 Workflow
 --------
@@ -25,7 +25,7 @@ from importlib.metadata import PackageNotFoundError, version
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 # Allow running as `python training/...py` without package install.
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -60,12 +60,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train Dhompo sklearn models")
     parser.add_argument(
         "--config",
-        default="configs/sklearn_model.yaml",
+        default="configs/shared/sklearn_model.yaml",
         help="Path to sklearn hyperparameter config YAML",
     )
     parser.add_argument(
         "--train-config",
-        default="configs/training.yaml",
+        default="configs/dhompo/training.yaml",
         help="Path to training split config YAML",
     )
     parser.add_argument(

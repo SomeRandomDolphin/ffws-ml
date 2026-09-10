@@ -2,12 +2,12 @@
 
 Usage
 -----
-    python training/run_experiments.py
-    python training/run_experiments.py --experiment B4
-    python training/run_experiments.py --all
+    python training/dhompo/run_experiments.py
+    python training/dhompo/run_experiments.py --experiment B4
+    python training/dhompo/run_experiments.py --all
 
 Runs experiments A through B4 with progressively more features enabled,
-outputs comparison table to reports/tables/experiment_results.xlsx.
+outputs comparison table to reports/dhompo/tables/experiment_results.xlsx.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
@@ -76,7 +76,7 @@ def run_experiment(
     data_sources = train_cfg["data_sources"]
     source_paths = {}
     for src in data_sources:
-        resolved = resolve_path_from_config("configs/training.yaml", src["path"])
+        resolved = resolve_path_from_config("configs/dhompo/training.yaml", src["path"])
         source_paths[src["label"]] = resolved
 
     segments = load_combined_data(
@@ -211,8 +211,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    train_cfg = load_yaml_config("configs/training.yaml")
-    model_cfg = load_yaml_config("configs/sklearn_model.yaml")
+    train_cfg = load_yaml_config("configs/dhompo/training.yaml")
+    model_cfg = load_yaml_config("configs/shared/sklearn_model.yaml")
 
     if args.experiment:
         exps_to_run = [args.experiment.upper()]
@@ -240,7 +240,7 @@ def main() -> None:
     # Combine and save results
     results_df = pd.concat(all_results, ignore_index=True)
 
-    output_dir = PROJECT_ROOT / "reports" / "tables"
+    output_dir = PROJECT_ROOT / "reports" / "dhompo" / "tables"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "experiment_progressive_features.xlsx"
     results_df.to_excel(output_path, index=False)

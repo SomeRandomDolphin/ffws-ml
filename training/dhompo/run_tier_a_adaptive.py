@@ -1,8 +1,8 @@
 """Training model adaptive Tier-A.
 
 Usage:
-    python training/run_tier_a_adaptive.py --epochs 5
-    python training/run_tier_a_adaptive.py --epochs 200 --batch-size 256 --mlflow
+    python training/dhompo/run_tier_a_adaptive.py --epochs 5
+    python training/dhompo/run_tier_a_adaptive.py --epochs 200 --batch-size 256 --mlflow
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import pickle
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
