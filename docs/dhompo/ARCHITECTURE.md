@@ -1,5 +1,12 @@
 # Dhompo Flood Prediction — Architecture v1
 
+> **Status: dokumen rancangan historis Dhompo.** Dokumen ini menyimpan keputusan
+> desain awal, bukan daftar fitur yang semuanya sudah berjalan. Ingest,
+> penjadwalan retraining, trigger drift, dan promosi/rollback otomatis belum
+> tersedia sebagai workflow otomatis dalam repository. Rujuk
+> [peta kode](../code-map.md) dan [panduan API](../deployment/index.md) untuk
+> implementasi saat ini; nama file usulan di bagian roadmap bersifat historis.
+
 Adaptive multi-horizon (T+1..T+5 h) water-level forecasting at Dhompo with
 real-time sensor-quality awareness, automated retraining, and explicit
 fallback when telemetry degrades.
@@ -24,7 +31,7 @@ question numbers used during the design interview (Q1..Q12).
 ## 2. Sensor Topology (Q2)
 
 14 stations contribute to the basin. The diagram in
-`reports/figures/diagram-alir.png` is authoritative for travel-time
+`reports/dhompo/figures/diagram-alir.png` is authoritative for travel-time
 relationships.
 
 ### 2.1 Telemetry availability

@@ -1,0 +1,79 @@
+site_name: Prediksi Muka Air — Dhompo dan Surabaya
+site_description: Panduan riset prediksi muka air DAS Dhompo dan Surabaya
+site_author: Muhammad Rifqi Maruf
+repo_url: https://github.com/rifqimaruf/regresi_dhompo
+repo_name: rifqimaruf/regresi_dhompo
+
+theme:
+  name: material
+  language: id
+  palette:
+    - scheme: default
+      primary: blue grey
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Mode gelap
+    - scheme: slate
+      primary: blue grey
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Mode terang
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search
+
+exclude_docs: |
+  .word_build/
+  *.docx
+  *.rtf
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - attr_list
+  - md_in_html
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Beranda: index.md
+  - Dhompo:
+      - Panduan Riset: dhompo/index.md
+      - EDA:
+          - Ringkasan: dhompo/eda/index.md
+          - Statistik Deskriptif: dhompo/eda/statistik-deskriptif.md
+          - Korelasi dan Lag: dhompo/eda/korelasi-lag.md
+          - Pola Temporal: dhompo/eda/dekomposisi-temporal.md
+      - Pemodelan:
+          - Arsitektur Model: dhompo/modeling/index.md
+          - Rekayasa Fitur: dhompo/modeling/rekayasa-fitur.md
+          - Evaluasi dan Hasil: dhompo/modeling/evaluasi-hasil.md
+      - Referensi:
+          - Machine Learning: dhompo/arsitektur_machine_learning.md
+          - Deep Learning: dhompo/arsitektur_lstm_gru_tcn.md
+          - Rancangan Adaptive: dhompo/ARCHITECTURE.md
+  - Surabaya:
+      - Panduan Riset: surabaya/index.md
+  - Peta Kode: code-map.md
+  - Migrasi Struktur: migration.md
+  - Deployment Dhompo:
+      - API & Serving: deployment/index.md
+      - Docker & MLflow: deployment/docker-mlflow.md
+      - Backend Adaptive: deployment/backend_integration.md
+      - Detail Integrasi Adaptive: deployment/TIER_A_ADAPTIVE_BACKEND_INTEGRATION.md
