@@ -1,0 +1,16 @@
+{
+  "name": "DAS Welang",
+  "publisher": "Badan Informasi Geospasial",
+  "service": "Atlas Wilayah Sungai",
+  "url": "https://geoservices.big.go.id/gis/rest/services/PTRA/Atlas_Wilayah_Sungai/MapServer/14",
+  "featureId": 11622,
+  "sourceName": "WELANG",
+  "retrievedAt": "2026-09-12",
+  "crs": "EPSG:4326",
+  "validation": {
+    "closed": true,
+    "selfIntersections": 0,
+    "vertices": 542
+  },
+  "note": "Kandidat 1294 (DAS WELANG) berada di sekitar 113.02,-8.25 dan bukan DAS Welang Pasuruan. Geometri tidak diubah untuk memasukkan stasiun."
+}

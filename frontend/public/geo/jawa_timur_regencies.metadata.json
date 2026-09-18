@@ -1,0 +1,11 @@
+{
+  "retrievedAt": "2026-09-12",
+  "crs": "EPSG:4326",
+  "name": "Batas Wilayah Administrasi Kabupaten/Kota Jawa Timur",
+  "publisher": "Badan Informasi Geospasial",
+  "service": "Bapenas/Batas_Administrasi layer 0",
+  "url": "https://geoservices.big.go.id/gis/rest/services/BAPANAS/Batas_Administrasi/MapServer/0/query",
+  "query": "WADMPR='Jawa Timur'",
+  "features": 40,
+  "license": "Data terbuka BIG"
+}

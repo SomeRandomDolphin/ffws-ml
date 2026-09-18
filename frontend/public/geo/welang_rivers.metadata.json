@@ -1,0 +1,12 @@
+{
+  "retrievedAt": "2026-09-12",
+  "crs": "EPSG:4326",
+  "name": "Jaringan sungai DAS Welang",
+  "publisher": "OpenStreetMap contributors",
+  "service": "Overpass API + clip batas DAS BIG 11622",
+  "url": "https://overpass-api.de/api/interpreter",
+  "query": "waterway~\"^(river|stream|canal)$\" bbox=(112.55, -7.99, 112.97, -7.54)",
+  "features": 372,
+  "license": "ODbL 1.0",
+  "note": "Di-clip ke batas DAS Welang BIG (OBJECTID_1 11622) dengan buffer 0,01 derajat."
+}

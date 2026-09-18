@@ -1,0 +1,8 @@
+{
+  "name": "welang-water-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": { "predev": "node scripts/prepare-map-worker.mjs", "dev": "next dev", "prebuild": "node scripts/prepare-map-worker.mjs", "build": "next build", "start": "next start" },
+  "dependencies": { "maplibre-gl": "^6.9.0", "next": "^16.3.4", "react": "^19.1.0", "react-dom": "^19.1.0", "recharts": "^3.1.0" },
+  "devDependencies": { "@types/node": "^22.15.0", "@types/react": "^19.1.0", "@types/react-dom": "^19.1.0", "typescript": "^5.8.0" }
+}

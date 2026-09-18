@@ -1,0 +1,12 @@
+{
+  "retrievedAt": "2026-09-12",
+  "crs": "EPSG:4326",
+  "name": "Jaringan sungai besar Jawa Timur",
+  "publisher": "OpenStreetMap contributors",
+  "service": "Overpass API",
+  "url": "https://overpass-api.de/api/interpreter",
+  "query": "waterway=river bbox=(110.8, -8.95, 114.8, -5.5)",
+  "features": 8770,
+  "license": "ODbL 1.0",
+  "note": "RBI HIDROGRAFI BIG tidak menyediakan lembar Jawa Timur pada layanan publik; OSM dipakai sebagai sumber."
+}

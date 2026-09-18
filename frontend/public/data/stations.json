@@ -1,0 +1,17 @@
+[
+  {"name":"Bd. Suwoto","latitude":-7.841071,"longitude":112.698057,"confidence":"Rendah","source":"user"},
+  {"name":"Krajan Timur","latitude":-7.817869,"longitude":112.732831,"confidence":"Sedang-Tinggi","source":"user"},
+  {"name":"Purwodadi","latitude":-7.803760,"longitude":112.746000,"confidence":"Tinggi","source":"user"},
+  {"name":"Bd. Sentono","latitude":-7.842500,"longitude":112.789600,"confidence":"Sedang","source":"user"},
+  {"name":"Bd. Baong","latitude":-7.774700,"longitude":112.773700,"confidence":"Sedang","source":"user"},
+  {"name":"Bd. Lecari","latitude":-7.705900,"longitude":112.726900,"confidence":"Sedang","source":"user"},
+  {"name":"Bd. Bakalan","latitude":-7.748434,"longitude":112.759904,"confidence":"Sedang-Rendah","source":"user"},
+  {"name":"AWLR Kademungan","latitude":-7.773310,"longitude":112.781730,"confidence":"Tinggi","source":"user"},
+  {"name":"Bd. Domas","latitude":-7.721469,"longitude":112.812289,"confidence":"Tinggi","source":"user"},
+  {"name":"Bd Guyangan","latitude":-7.658333,"longitude":112.822778,"confidence":"Sedang-Tinggi","source":"user"},
+  {"name":"Bd. Grinting","latitude":-7.689107,"longitude":112.846016,"confidence":"Tinggi","source":"user"},
+  {"name":"Sidogiri","latitude":-7.668333,"longitude":112.831944,"confidence":"Sedang","source":"user"},
+  {"name":"Klosod","latitude":-7.665417,"longitude":112.840278,"confidence":"Sedang","source":"user"},
+  {"name":"Dhompo","latitude":-7.657780,"longitude":112.861390,"confidence":"Tinggi","source":"user"},
+  {"name":"Jalan Nasional","latitude":-7.629417,"longitude":112.874806,"confidence":"Tinggi-Sedang","source":"user"}
+]

@@ -1,0 +1,14 @@
+{
+  "retrievedAt": "2026-09-12",
+  "crs": "EPSG:4326",
+  "name": "Sub-DAS stasiun DAS Welang",
+  "publisher": "Delineasi mandiri dari DEMNAS (BIG) + WhiteboxTools",
+  "service": "DEMNAS DEM_Indonesia ImageServer exportImage",
+  "url": "https://geoservices.big.go.id/raster/rest/services/DEMNAS/DEM_Indonesia/ImageServer/exportImage",
+  "demPixelDeg": 0.0003,
+  "crsProcessing": "EPSG:32749",
+  "features": 15,
+  "partitionAreaKm2": 491.2,
+  "basinAreaBigKm2": 497.5,
+  "note": "Sub-DAS adalah area aliran lokal yang mempartisi DAS (tidak bertingkat): tiap sel ditugaskan ke stasiun terdekat di hilir. 'upstream_area_km2' memuat total area tangkapan hulu tiap stasiun. Akurasi bergantung pada kualitas koordinat (kolom station_confidence) dan DEMNAS ~30 m. Stasiun di luar batas DAS BIG: tidak ada."
+}
