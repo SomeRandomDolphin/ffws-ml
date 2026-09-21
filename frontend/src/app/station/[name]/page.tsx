@@ -2,17 +2,20 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getDemoSnapshot } from "@/lib/demo-data";
 import StationDetail from "@/components/station-detail";
+import SurabayaDetail from "@/components/surabaya-detail";
+import { surabayaNames } from "@/lib/surabaya";
 
 export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
   const { name } = await params;
   const stationName = decodeURIComponent(name);
-  return { title: `${stationName} · ITS Water Dashboard`, description: `Detail stasiun pemantauan muka air ${stationName} di DAS Welang, Pasuruan.` };
+  return { title: `${stationName} · ITS Water Dashboard`, description: `Detail stasiun pemantauan muka air ${stationName}.` };
 }
 
 export default async function StationPage({ params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
   const stationName = decodeURIComponent(name);
   const snapshot = getDemoSnapshot(0);
+  if (surabayaNames.some(item => item === stationName)) return <SurabayaDetail name={stationName} />;
   const station = snapshot.stations.find((item) => item.name === stationName);
   if (!station) notFound();
   const forecasts = Array.from({ length: 5 }, (_, index) => {

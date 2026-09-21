@@ -1,7 +1,7 @@
 import type { DashboardSnapshot, StationSnapshot, StationStatus, WaterQualityStatus } from "./types";
 import { stationGeography } from "./stations";
-export const statusColors: Record<StationStatus, string> = { Normal: "#32956b", Meningkat: "#d9ae32", Waspada: "#e48732", Bahaya: "#cb4949" };
-export const qualityColors: Record<WaterQualityStatus, string> = { Baik: "#28998d", Sedang: "#718093", Buruk: "#765477" };
+import { statusColors } from "./presentation";
+export { statusColors, qualityColors } from "./presentation";
 const statusFor = (i: number, lead: number): StationStatus => i === 13 ? (lead >= 2 ? "Bahaya" : "Waspada") : i % 7 === 0 ? "Meningkat" : i % 5 === 0 ? "Waspada" : "Normal";
 export function stationHistory(station: StationSnapshot) {
   return Array.from({ length: 25 }, (_, index) => ({ time: `${index - 24 < 0 ? index - 24 : `+${index - 24}`}j`, valueM: station.valueM - 0.72 + index * 0.03 + Math.sin(index / 2) * 0.08, rainMm: Math.max(0, station.rainfall30mMm * 1.8 * Math.exp(-((index - 18) ** 2) / 20)) }));
@@ -23,7 +23,7 @@ export function getDemoSnapshot(leadHours = 0): DashboardSnapshot {
       tdsMgL: 118 + (i % 7) * 34 + (qualityStatus === "Buruk" ? 125 : 0),
       status: qualityStatus,
     };
-    return { ...geo, valueM, delta3hM, status, alertM: base + 0.7, dangerM: base + 1.32, color: statusColors[status], rainfall30mMm, rainfall24hMm, quality };
+    return { ...geo, dataMode: "simulation" as const, valueM, delta3hM, status, alertM: base + 0.7, dangerM: base + 1.32, color: statusColors[status], rainfall30mMm, rainfall24hMm, quality };
   });
   const dhompo = stations.find((station) => station.name === "Dhompo")!;
   const history = stationHistory(dhompo);

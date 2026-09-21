@@ -15,7 +15,7 @@ If the primary basemap fails or takes more than 10 seconds to load, the main map
 
 The 15 station markers and their HTML labels render independently of tile loading. Search selects and centers a station; clicking a marker opens its current simulated reading, detail link, and chart action. The legend starts open, while Overview and the history chart start closed. On mobile the side panel becomes a scrollable bottom panel. The timeline changes simulated readings without rebuilding the map or resetting its camera.
 
-Station status colors and deterministic rainfall/quality values come from `src/lib/demo-data.ts`. Basin and administrative boundaries come from BIG, rivers from OpenStreetMap, and sub-basins from a reproducible DEMNAS/WhiteboxTools pipeline in `scripts/build_geodata.py`. Sensor values remain simulation data; no backend connection is required.
+Station status colors and deterministic rainfall/quality values come from `src/lib/demo-data.ts`. Basin and administrative boundaries come from BIG, rivers from OpenStreetMap, and sub-basins from a reproducible DEMNAS/WhiteboxTools pipeline in `scripts/build_geodata.py`. The local Surabaya river layer includes river, stream, and canal features clipped to the BIG city boundary. Sensor values remain simulation data; no backend connection is required.
 
 Validation: `npx tsc --noEmit --incremental false` and `npm run build`. Browser checks should cover all 15 markers on desktop/mobile, keyboard and search selection, chart controls, layer toggles, timeline updates, and failed tile requests.
 

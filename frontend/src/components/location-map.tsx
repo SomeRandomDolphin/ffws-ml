@@ -7,7 +7,7 @@ import type { StationSnapshot } from "@/lib/types";
 import Icon from "./icon";
 import { configureMapWorker } from "@/lib/map-worker";
 
-export default function LocationMap({ station }: { station: StationSnapshot }) {
+export default function LocationMap({ station }: { station: { name: string; latitude: number; longitude: number; color?: string } }) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const retryRef = useRef<(() => void) | null>(null);

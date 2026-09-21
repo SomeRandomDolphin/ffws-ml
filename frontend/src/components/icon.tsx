@@ -7,6 +7,7 @@ const paths = {
   legend: "M9 5h12M9 12h12M9 19h12M3 5h.01M3 12h.01M3 19h.01",
   chart: "M3 3v18h18M7 14l4-5 4 3 6-8",
   search: "m21 21-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
+  filter: "M4 5h16M7 12h10M10 19h4",
   close: "m6 6 12 12M6 18 18 6",
   home: "m3 10 9-7 9 7v11h-6v-7H9v7H3V10Z",
   play: "m7 4 14 8-14 8V4Z",

@@ -5,6 +5,7 @@ export type GeoAssets = {
   regencies: FeatureCollection;
   eastRivers: FeatureCollection;
   welangRivers: FeatureCollection;
+  surabayaRivers: FeatureCollection;
   subdas: FeatureCollection;
   basin: FeatureCollection;
 };
@@ -13,6 +14,7 @@ export type GeoSources = {
   admin: boolean;
   eastRivers: boolean;
   topology: boolean;
+  surabayaRivers: boolean;
   subdas: boolean;
   basin: boolean;
 };
@@ -23,6 +25,7 @@ const specs: Record<keyof GeoAssets, AssetSpec> = {
   regencies: { path: "/geo/jawa_timur_regencies.geojson", kinds: ["Polygon", "MultiPolygon"] },
   eastRivers: { path: "/geo/east_java_rivers.geojson", kinds: ["LineString", "MultiLineString"] },
   welangRivers: { path: "/geo/welang_rivers.geojson", kinds: ["LineString", "MultiLineString"] },
+  surabayaRivers: { path: "/geo/surabaya_rivers.geojson", kinds: ["LineString", "MultiLineString"] },
   subdas: { path: "/geo/welang_subdas.geojson", kinds: ["Polygon", "MultiPolygon"] },
   basin: { path: "/geo/basin_boundary.geojson", kinds: ["Polygon", "MultiPolygon"], verifyBasin: true },
 };
@@ -69,10 +72,11 @@ async function loadAsset(spec: AssetSpec): Promise<{ data: FeatureCollection; lo
 }
 
 export async function loadGeoAssets(): Promise<{ assets: GeoAssets; sources: GeoSources }> {
-  const [regencies, eastRivers, welangRivers, subdas, basin] = await Promise.all([
+  const [regencies, eastRivers, welangRivers, surabayaRivers, subdas, basin] = await Promise.all([
     loadAsset(specs.regencies),
     loadAsset(specs.eastRivers),
     loadAsset(specs.welangRivers),
+    loadAsset(specs.surabayaRivers),
     loadAsset(specs.subdas),
     loadAsset(specs.basin),
   ]);
@@ -81,6 +85,7 @@ export async function loadGeoAssets(): Promise<{ assets: GeoAssets; sources: Geo
       regencies: regencies.data,
       eastRivers: eastRivers.data,
       welangRivers: welangRivers.data,
+      surabayaRivers: surabayaRivers.data,
       subdas: subdas.data,
       basin: basin.data,
     },
@@ -88,6 +93,7 @@ export async function loadGeoAssets(): Promise<{ assets: GeoAssets; sources: Geo
       admin: regencies.local,
       eastRivers: eastRivers.local,
       topology: welangRivers.local,
+      surabayaRivers: surabayaRivers.local,
       subdas: subdas.local,
       basin: basin.local,
     },

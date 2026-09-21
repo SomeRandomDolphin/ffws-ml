@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { StationSnapshot } from "@/lib/types";
+import { chartTheme } from "@/lib/presentation";
 import Icon from "./icon";
 import { SiteFooter, WelangBrand } from "./brand";
 import LocationMap from "./location-map";
@@ -81,15 +82,15 @@ export default function StationDetail({ station, forecasts = [], timestamp = "20
         <details className="scale-explanation"><summary>Apa perbedaan skala Linear dan Log?</summary><div><p><strong>Linear</strong> menampilkan perubahan absolut secara proporsional dan direkomendasikan untuk membaca jarak muka air terhadap ambang.</p><p><strong>Log</strong> menekankan perubahan relatif saat rentang nilai sangat lebar. Skala ini dapat membuat jarak absolut terhadap ambang terlihat lebih kecil.</p></div></details>
         <div className="chart-caption"><div><strong>Muka air</strong><span>meter</span></div><div><strong>Curah hujan</strong><span>mm per interval</span></div><div><strong>Ringkasan</strong><span>minimum {summary.min.toFixed(2)} m · maksimum {summary.max.toFixed(2)} m · tren {trend.toLowerCase()}</span></div></div>
         <figure className="monitor-chart"><figcaption className="sr-only">Grafik riwayat {periodConfig.label}. Nilai terbaru {summary.latest.toFixed(2)} meter, minimum {summary.min.toFixed(2)} meter, maksimum {summary.max.toFixed(2)} meter.</figcaption><ResponsiveContainer width="100%" height="100%"><ComposedChart data={history} margin={{top:25,right:8,left:0,bottom:8}}>
-          <CartesianGrid stroke="#dce5e9" vertical={false} />
-          <XAxis dataKey="time" type="number" domain={["dataMin","dataMax"]} tickCount={6} minTickGap={38} tickFormatter={value => period === "7d" ? timeFormat.format(value).replace(/,? 2026/, "") : clockFormat.format(value)} tick={{fontSize:11,fill:"#5d6b75"}} axisLine={{stroke:"#aebbc3"}} tickLine={false} />
-          <YAxis yAxisId="water" scale={scale} domain={domain} allowDataOverflow width={50} tickFormatter={value => Number(value).toFixed(1)} tick={{fontSize:11,fill:"#5d6b75"}} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="rain" orientation="right" width={40} tick={{fontSize:11,fill:"#5d6b75"}} axisLine={false} tickLine={false} />
+          <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+          <XAxis dataKey="time" type="number" domain={["dataMin","dataMax"]} tickCount={6} minTickGap={38} tickFormatter={value => period === "7d" ? timeFormat.format(value).replace(/,? 2026/, "") : clockFormat.format(value)} tick={chartTheme.tick} axisLine={{stroke:chartTheme.grid}} tickLine={false} />
+          <YAxis yAxisId="water" scale={scale} domain={domain} allowDataOverflow width={50} tickFormatter={value => Number(value).toFixed(1)} tick={chartTheme.tick} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="rain" orientation="right" width={40} tick={chartTheme.tick} axisLine={false} tickLine={false} />
           <Tooltip content={({active,payload}) => { const point = payload?.[0]?.payload as typeof history[number] | undefined; return active && point ? <div className="monitor-tooltip"><strong>{timeFormat.format(point.time)} WIB</strong><span>Muka air: {point.valueM.toFixed(2)} m</span><span>Hujan: {point.rainMm.toFixed(1)} mm</span><span>Status: {alertLevelAt(point.valueM,station)}</span></div> : null; }} />
-          <Area yAxisId="rain" dataKey="rainMm" fill="#d6e8f1" stroke="none" isAnimationActive={false} />
-          <Line yAxisId="water" dataKey="valueM" stroke="#176b9c" strokeWidth={2.3} dot={false} isAnimationActive={false} />
-          <ReferenceLine yAxisId="water" y={station.alertM} stroke="#b56d24" strokeDasharray="6 5" label={{value:"Waspada",position:"insideTopRight",fontSize:11,fill:"#875019"}} />
-          <ReferenceLine yAxisId="water" y={station.dangerM} stroke="#a94343" strokeDasharray="6 5" label={{value:"Bahaya",position:"insideTopRight",fontSize:11,fill:"#923838"}} />
+          <Area yAxisId="rain" dataKey="rainMm" fill={chartTheme.rainFill} stroke={chartTheme.rain} isAnimationActive={false} />
+          <Line yAxisId="water" dataKey="valueM" stroke={chartTheme.water} strokeWidth={2.5} dot={false} isAnimationActive={false} />
+          <ReferenceLine yAxisId="water" y={station.alertM} stroke={chartTheme.warning} strokeDasharray="6 5" label={{value:"Waspada",position:"insideTopRight",fontSize:12,fill:chartTheme.warning}} />
+          <ReferenceLine yAxisId="water" y={station.dangerM} stroke={chartTheme.danger} strokeDasharray="2 4" label={{value:"Bahaya",position:"insideTopRight",fontSize:12,fill:chartTheme.danger}} />
         </ComposedChart></ResponsiveContainer></figure>
         <details className="inline-data"><summary>Tampilkan data tabular</summary><div className="monitor-table-wrap"><table className="monitor-table"><caption>Riwayat muka air dan curah hujan, terbaru terlebih dahulu</caption><thead><tr><th scope="col">Waktu pengamatan</th><th scope="col">Muka air</th><th scope="col">Hujan</th><th scope="col">Status</th></tr></thead><tbody>{[...history].reverse().map(point => <tr key={point.time}><td>{timeFormat.format(point.time)} WIB</td><td>{point.valueM.toFixed(2)} m</td><td>{point.rainMm.toFixed(1)} mm</td><td className={`status-${alertLevelAt(point.valueM,station).toLowerCase()}`}>{alertLevelAt(point.valueM,station)}</td></tr>)}</tbody></table></div></details>
       </section>

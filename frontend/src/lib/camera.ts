@@ -10,6 +10,11 @@ export type RegionPreset = {
 };
 
 export const regionPresets: Record<RegionKey, RegionPreset> = {
+  surabaya: {
+    key: "surabaya", label: "Surabaya", asset: "regencies", maxZoom: 14,
+    description: "Empat lokasi pemantauan Surabaya; posisi sensor belum terverifikasi.",
+    fallbackBounds: [112.73, -7.31, 112.81, -7.26],
+  },
   "jawa-timur": {
     key: "jawa-timur",
     label: "Jawa Timur",
@@ -30,4 +35,4 @@ export const regionPresets: Record<RegionKey, RegionPreset> = {
 
 export const defaultRegion: RegionKey = "jawa-timur";
 
-export const regionOrder: RegionKey[] = ["jawa-timur", "welang"];
+export const regionOrder: RegionKey[] = ["jawa-timur", "welang", "surabaya"];

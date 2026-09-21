@@ -7,4 +7,4 @@ export const metadata: Metadata = {
   description: "Dashboard simulasi muka air DAS Welang",
   icons: { icon: "/favicon.png" },
 };
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) { return <html lang="id"><body>{children}</body></html>; }
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) { return <html lang="id"><body suppressHydrationWarning>{children}</body></html>; }

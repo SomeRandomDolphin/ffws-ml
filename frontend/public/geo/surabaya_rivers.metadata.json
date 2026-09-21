@@ -1,0 +1,12 @@
+{
+  "retrievedAt": "2026-09-21",
+  "crs": "EPSG:4326",
+  "name": "Jaringan sungai Kota Surabaya",
+  "publisher": "OpenStreetMap contributors",
+  "service": "Overpass API + clip batas administrasi BIG",
+  "url": "https://overpass-api.de/api/interpreter",
+  "query": "waterway~\"^(river|stream|canal)$\" bbox=(112.59044, -7.35144, 112.84683, -7.19039)",
+  "features": 418,
+  "license": "ODbL 1.0",
+  "note": "River, stream, dan canal dipotong ke batas Kota Surabaya dari aset administrasi BIG."
+}
