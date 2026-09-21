@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
-from dhompo.data.loader import TARGET_STATION, UPSTREAM_STATIONS
+from dhompo.data.loader import ALL_STATIONS, TARGET_STATION, UPSTREAM_STATIONS
 
 
 class HistoryRow(BaseModel):
@@ -129,3 +129,79 @@ class PredictResponse(BaseModel):
             "timestep. Values: OK, STUCK, FLATLINE, OUT_OF_RANGE, MISSING, STALE."
         ),
     )
+
+
+class MultiStationPredictRequest(BaseModel):
+    """Request prediksi h1–h6 untuk seluruh 15 stasiun."""
+
+    history: list[HistoryRow]
+    future_rainfall: Optional[list[float]] = Field(
+        None,
+        description=(
+            "Opsional 12 nilai hujan masa depan (mm per 30 menit). "
+            "Jika kosong, API menjalankan ensemble Markov-Gamma."
+        ),
+    )
+    scenario_count: int = Field(20, ge=2, le=200)
+    seed: int = 42
+
+    @model_validator(mode="after")
+    def validate_multistation_input(self) -> MultiStationPredictRequest:
+        if len(self.history) < 48:
+            raise ValueError(
+                f"history must contain at least 48 rows, got {len(self.history)}."
+            )
+        for index in range(1, len(self.history)):
+            delta = (
+                self.history[index].timestamp - self.history[index - 1].timestamp
+            ).total_seconds()
+            if delta != 1800:
+                raise ValueError(
+                    f"Rows {index - 1}→{index}: expected 30-minute gap (1800s), "
+                    f"got {delta}s."
+                )
+        for index, row in enumerate(self.history):
+            missing = set(ALL_STATIONS) - set(row.readings)
+            if missing:
+                raise ValueError(
+                    f"Row {index} (timestamp={row.timestamp}): missing stations "
+                    f"{sorted(missing)}."
+                )
+        if self.future_rainfall is not None:
+            if len(self.future_rainfall) != 12:
+                raise ValueError(
+                    "future_rainfall must contain exactly 12 values "
+                    "(6 hours at 30-minute intervals)."
+                )
+            if any(not float("-inf") < value < float("inf") or value < 0 for value in self.future_rainfall):
+                raise ValueError("future_rainfall values must be finite and non-negative.")
+        return self
+
+
+class QuantileInterval(BaseModel):
+    p10: float
+    p50: float
+    p90: float
+
+
+class MultiStationPredictResponse(BaseModel):
+    """Response prediksi seluruh stasiun dan backbone simulator."""
+
+    predictions: dict[str, dict[str, float]]
+    simulator_predictions: dict[str, dict[str, float]]
+    scenario_spread: Optional[dict[str, dict[str, QuantileInterval]]] = Field(
+        None,
+        description=(
+            "P10/P50/P90 antar-skenario hujan. Bukan prediction interval "
+            "terkalibrasi dan tidak mencakup seluruh model uncertainty."
+        ),
+    )
+    backend: str
+    models: dict[str, str]
+    timestamp: datetime
+    prediction_time: datetime
+    scenario_count: int
+    future_rainfall_mode: Literal["provided", "markov_gamma_ensemble"]
+    units: Literal["m"] = "m"
+    operationally_validated: Literal[False] = False
+    uncertainty_calibrated: Literal[False] = False

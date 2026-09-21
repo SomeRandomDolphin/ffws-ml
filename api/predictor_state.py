@@ -75,16 +75,25 @@ def load_predictor_state(app: FastAPI) -> None:
     app.state.predictor_backend = backend
     app.state.predictor = None
     app.state.predictor_error = None
+    app.state.hybrid_predictor = None
+    app.state.hybrid_predictor_error = None
 
     try:
         predictor = create_predictor()
     except Exception as exc:
         app.state.predictor_error = str(exc)
         logger.exception("Predictor startup failed for backend '%s'.", backend)
-        return
+    else:
+        app.state.predictor = predictor
+        logger.info("Predictor ready for backend '%s'.", backend)
 
-    app.state.predictor = predictor
-    logger.info("Predictor ready for backend '%s'.", backend)
+    try:
+        from dhompo.serving.hybrid_predictor import HybridMultiStationPredictor
+
+        app.state.hybrid_predictor = HybridMultiStationPredictor()
+    except Exception as exc:
+        app.state.hybrid_predictor_error = str(exc)
+        logger.warning("Hybrid multi-station predictor unavailable: %s", exc)
 
 
 def get_predictor(request: Request) -> Any:
@@ -94,6 +103,17 @@ def get_predictor(request: Request) -> Any:
         detail = "Predictor is not ready."
         if error:
             detail = f"Predictor is not ready: {error}"
+        raise HTTPException(status_code=503, detail=detail)
+    return predictor
+
+
+def get_hybrid_predictor(request: Request) -> Any:
+    predictor = getattr(request.app.state, "hybrid_predictor", None)
+    if predictor is None:
+        error = getattr(request.app.state, "hybrid_predictor_error", None)
+        detail = "Hybrid multi-station predictor is not ready."
+        if error:
+            detail = f"Hybrid multi-station predictor is not ready: {error}"
         raise HTTPException(status_code=503, detail=detail)
     return predictor
 

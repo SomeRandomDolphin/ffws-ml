@@ -56,7 +56,12 @@ class UrbanFilePredictor:
         return self._target_column
 
     def model_mapping(self) -> dict[str, str]:
+        """Return model paths for diagnostics."""
         return {f"h{h}": str(path) for h, path in sorted(self._model_paths.items())}
+
+    @property
+    def source_signals(self) -> list[str]:
+        return list(self._source_signals)
 
     def predict_from_history(
         self,

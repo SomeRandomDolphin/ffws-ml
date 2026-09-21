@@ -80,7 +80,7 @@ locations:
         - "curah_hujan_lokasi_3_b_rumah_pompa_pucang"
 
   - key: "lokasi_4_pln_menur"
-    name: "PLN Menur"
+    name: "Sebrang Perpustaan Jawa Timur"
     water_level:
       canonical: "ketinggian_lokasi_4_pln_menur"
       components:

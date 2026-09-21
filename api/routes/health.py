@@ -36,4 +36,13 @@ async def model_info(request: Request) -> dict:
         "ready": readiness["ready"],
         "error": readiness["error"],
         "model_alias": model_alias() if backend == "mlflow" else None,
+        "hybrid_multistation_ready": (
+            getattr(request.app.state, "hybrid_predictor", None) is not None
+        ),
+        "hybrid_multistation_error": getattr(
+            request.app.state, "hybrid_predictor_error", None,
+        ),
+        "hybrid_required_history_rows": 48,
+        "hybrid_required_stations": 15,
+        "hybrid_horizons": [1, 2, 3, 4, 5, 6],
     }

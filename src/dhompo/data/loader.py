@@ -11,20 +11,21 @@ from dhompo.config import PROJECT_ROOT
 
 # Canonical station ordering (elevation descending)
 STATION_META: dict[str, tuple[float, int]] = {
-    "Bd. Suwoto":      (503,  1),
-    "Krajan Timur":    (335,  2),
-    "Purwodadi":       (287,  3),
-    "Bd. Baong":       (169,  4),
-    "Bd. Lecari":      (167,  5),
-    "Bd. Bakalan":     (136,  6),
-    "AWLR Kademungan": (128,  7),
-    "Bd. Domas":       (57,   8),
-    "Bd Guyangan":     (32,   9),
-    "Bd. Grinting":    (28,  10),
-    "Sidogiri":        (24,  11),
-    "Klosod":          (22,  12),
-    "Dhompo":          (7,   13),
-    "Jalan Nasional":  (1.8, 14),
+    "Bd. Sentono":     (680.536, 1),
+    "Bd. Suwoto":      (503,     2),
+    "Krajan Timur":    (335,     3),
+    "Purwodadi":       (287,     4),
+    "Bd. Baong":       (169,     5),
+    "Bd. Lecari":      (167,     6),
+    "Bd. Bakalan":     (136,     7),
+    "AWLR Kademungan": (128,     8),
+    "Bd. Domas":       (57,      9),
+    "Bd Guyangan":     (32,     10),
+    "Bd. Grinting":    (28,     11),
+    "Sidogiri":        (24,     12),
+    "Klosod":          (22,     13),
+    "Dhompo":          (7,      14),
+    "Jalan Nasional":  (1.8,    15),
 }
 
 UPSTREAM_STATIONS: list[str] = [
@@ -46,6 +47,9 @@ ALL_STATIONS: list[str] = list(STATION_META.keys())
 TARGET_STATION: str = "Dhompo"
 
 _DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "data-clean.csv"
+
+GOLD_DATA_PATH = PROJECT_ROOT / "data" / "gold" / "hydro.csv"
+GOLD_STATIONS_PATH = PROJECT_ROOT / "data" / "gold" / "stations.csv"
 
 # Mapping from generated-data column names → canonical names
 GENERATED_COLUMN_MAP: dict[str, str] = {
@@ -83,6 +87,39 @@ def load_data(path: str | Path | None = None) -> pd.DataFrame:
     df = pd.read_csv(csv_path, parse_dates=["Datetime"], index_col="Datetime")
     df = df.asfreq("30min")
     return df
+
+
+def load_gold_data(path: str | Path | None = None) -> pd.DataFrame:
+    """Load the merged gold dataset produced by ``scripts/build_gold.py``.
+
+    The frame has a DatetimeIndex named ``timestamp``, a ``source``
+    column (``2022_clean`` / ``2023_generated``), a ``rain_mm`` column
+    (NaN for 2022), and canonical station columns. Segments are NOT
+    contiguous: there is a ~26-day gap between the two sources.
+    """
+    csv_path = Path(path) if path else GOLD_DATA_PATH
+    df = pd.read_csv(csv_path, parse_dates=["timestamp"], index_col="timestamp")
+    return df.sort_index()
+
+
+def load_gold_stations(path: str | Path | None = None) -> pd.DataFrame:
+    """Load gold station metadata (coords, elevation, branch, travel)."""
+    csv_path = Path(path) if path else GOLD_STATIONS_PATH
+    return pd.read_csv(csv_path).set_index("station")
+
+
+def split_gold_segments(gold: pd.DataFrame) -> list[pd.DataFrame]:
+    """Split the gold frame into contiguous 30-min segments."""
+    segs: list[pd.DataFrame] = []
+    for _, seg in gold.groupby("source", sort=True):
+        seg = seg.sort_index()
+        gap = seg.index.to_series().diff()
+        starts = [0, *(int(i) for i in gap[gap > pd.Timedelta("30min")].index)]
+        for s, e in zip(starts, [*starts[1:], len(seg)]):
+            chunk = seg.iloc[s:e]
+            if len(chunk):
+                segs.append(chunk)
+    return segs
 
 
 def load_generated_data(path: str | Path) -> GeneratedData:

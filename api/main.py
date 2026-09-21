@@ -13,20 +13,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.predictor_state import load_predictor_state
 from api.routes.health import router as health_router
 from api.routes.predict import router as predict_router
+from api.routes.multistation import router as multistation_router
 from dhompo.config import load_serving_config
+from api.routes.surabaya import router as surabaya_router
+from dhompo.serving.live_surabaya import LiveSurabaya
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_predictor_state(app)
-    yield
+    app.state.surabaya = LiveSurabaya()
+    app.state.surabaya.start()
+    try:
+        yield
+    finally:
+        app.state.surabaya.close()
 
 
 app = FastAPI(
     title="Dhompo Flood Prediction API",
     description=(
-        "Multi-horizon (1-5 jam) water level prediction for Sungai Dhompo "
-        "early-warning flood system."
+        "Multi-horizon water level prediction for Dhompo (+1..+5 jam) and "
+        "hybrid scenario prediction for 15 Welang stations (+1..+6 jam)."
     ),
     version="1.0.0",
     docs_url="/docs",
@@ -43,6 +51,8 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(predict_router)
+app.include_router(multistation_router)
+app.include_router(surabaya_router)
 
 
 @app.get("/", include_in_schema=False)

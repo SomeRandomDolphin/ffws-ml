@@ -22,7 +22,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .loader import UPSTREAM_STATIONS, TARGET_STATION, STATION_META, DataSegment
+from .loader import ALL_STATIONS, UPSTREAM_STATIONS, TARGET_STATION, STATION_META, DataSegment
 
 
 # Empirical travel time from EDA (xls_06): lag in 30-min steps per station.
@@ -293,3 +293,111 @@ def align_features_targets(
     X_aligned = X.loc[valid_idx]
     y_aligned = {h: y.loc[valid_idx] for h, y in y_horizons.items()}
     return X_aligned, y_aligned
+
+
+def build_multistation_features(
+    df: pd.DataFrame,
+    stations: list[str] | None = None,
+    extra_columns: list[str] | None = None,
+) -> pd.DataFrame:
+    """Bangun fitur pada waktu t dari seluruh stasiun untuk model multi-output."""
+    station_names = list(stations or ALL_STATIONS)
+    missing = [station for station in station_names if station not in df.columns]
+    if missing:
+        raise ValueError(f"Kolom stasiun tidak tersedia: {missing}.")
+    if TARGET_STATION not in station_names:
+        raise ValueError(f"Daftar stasiun harus memuat target {TARGET_STATION!r}.")
+
+    input_stations = [station for station in station_names if station != TARGET_STATION]
+    return build_forecast_features(
+        df,
+        upstream_stations=input_stations,
+        target=TARGET_STATION,
+        extra_columns=extra_columns,
+    )
+
+
+def build_multistation_targets(
+    df: pd.DataFrame,
+    horizons: list[int],
+    horizon_steps: dict[int, int],
+    stations: list[str] | None = None,
+) -> dict[int, pd.DataFrame]:
+    """Bangun target masa depan (baris waktu, kolom stasiun) per horizon."""
+    station_names = list(stations or ALL_STATIONS)
+    missing = [station for station in station_names if station not in df.columns]
+    if missing:
+        raise ValueError(f"Kolom target stasiun tidak tersedia: {missing}.")
+    missing_horizons = [h for h in horizons if h not in horizon_steps]
+    if missing_horizons:
+        raise ValueError(f"horizon_steps tidak memuat horizon: {missing_horizons}.")
+
+    return {
+        h: df[station_names].shift(-horizon_steps[h])
+        for h in horizons
+    }
+
+
+def align_multistation_features_targets(
+    X: pd.DataFrame,
+    y_horizons: dict[int, pd.DataFrame],
+) -> tuple[pd.DataFrame, dict[int, pd.DataFrame]]:
+    """Selaraskan fitur dengan seluruh target multi-stasiun tanpa nilai hilang."""
+    valid_idx = X.dropna().index
+    for targets in y_horizons.values():
+        valid_idx = valid_idx.intersection(targets.dropna().index)
+
+    return X.loc[valid_idx], {
+        horizon: targets.loc[valid_idx]
+        for horizon, targets in y_horizons.items()
+    }
+
+
+def build_multistation_dataset_from_segments(
+    segments: list[DataSegment],
+    horizons: list[int],
+    horizon_steps: dict[int, int],
+    stations: list[str] | None = None,
+    extra_columns: list[str] | None = None,
+) -> tuple[pd.DataFrame, dict[int, pd.DataFrame], pd.Series]:
+    """Bangun dataset multi-stasiun per segmen agar fitur/target tidak melintasi gap."""
+    feature_parts: list[pd.DataFrame] = []
+    target_parts: dict[int, list[pd.DataFrame]] = {h: [] for h in horizons}
+    source_parts: list[pd.Series] = []
+
+    for segment in segments:
+        frame = segment.df.copy()
+        if extra_columns:
+            for column in extra_columns:
+                if segment.rainfall is not None and column == segment.rainfall.name:
+                    frame[column] = segment.rainfall
+                elif column not in frame.columns:
+                    frame[column] = 0.0
+
+        X_segment = build_multistation_features(
+            frame,
+            stations=stations,
+            extra_columns=extra_columns,
+        )
+        y_segment = build_multistation_targets(
+            frame,
+            horizons=horizons,
+            horizon_steps=horizon_steps,
+            stations=stations,
+        )
+        X_segment, y_segment = align_multistation_features_targets(
+            X_segment, y_segment,
+        )
+        feature_parts.append(X_segment)
+        for horizon in horizons:
+            target_parts[horizon].append(y_segment[horizon])
+        source_parts.append(pd.Series(segment.label, index=X_segment.index, name="source"))
+
+    return (
+        pd.concat(feature_parts, axis=0),
+        {
+            horizon: pd.concat(parts, axis=0)
+            for horizon, parts in target_parts.items()
+        },
+        pd.concat(source_parts, axis=0),
+    )

@@ -30,6 +30,8 @@ output_eda/
 # Data (existing tracked Dhompo files remain tracked)
 /data/**/*
 !/data/README.md
+!/data/synthetic/
+!/data/synthetic/README.md
 /artifacts/
 
 # Reports and document exports are local; their Markdown guides are source.
@@ -61,3 +63,6 @@ site/
 
 # Project notes 
 DEV_NOTES.md
+
+# Local database credentials
+/configs/surabaya/database.local.yaml
