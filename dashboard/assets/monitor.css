@@ -1,0 +1,224 @@
+.wm-app { --navy:#102d4e; --blue:#167cb5; height:100dvh; display:flex; flex-direction:column; background:white; color:var(--navy); font:13px "IBM Plex Sans","Segoe UI",sans-serif; overflow:hidden; }
+.wm-app * { box-sizing:border-box; }
+.wm-sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+.wm-app button,.wm-app input { font:inherit; }
+.wm-app button { cursor:pointer; }
+.wm-app button:focus-visible,.wm-app input:focus-visible,.wm-app summary:focus-visible { outline:3px solid #167cb5; outline-offset:2px; }
+.wm-header { height:56px; flex-shrink:0; display:flex; align-items:center; gap:28px; padding:0 24px; background:var(--navy); color:white; z-index:2; }
+.wm-brand { display:flex; align-items:center; gap:10px; }
+.wm-logo { font-size:42px; line-height:1; color:#82c8e5; }
+.wm-brand>div { display:flex; align-items:baseline; gap:12px; }
+.wm-brand h1 { font:600 28px "Barlow Semi Condensed",sans-serif; margin:0; letter-spacing:.2px; }
+.wm-brand span:not(.wm-logo) { font-size:9px; letter-spacing:1.8px; color:#bbd1e1; }
+.wm-location { border-left:1px solid #45617b; padding-left:25px; font-size:11px; color:#ccdae7; }
+.wm-clock { margin-left:auto; font-size:11px; display:flex; align-items:center; gap:8px; font-variant-numeric:tabular-nums; }
+.wm-clock-dot { width:6px;height:6px;background:#82c8e5;border-radius:50%; }
+.wm-demo { font-size:9px; letter-spacing:1px; border:1px solid #61798f; border-radius:4px; padding:6px 9px; color:#deebf4; white-space:nowrap; }
+.wm-workspace { display:flex; flex:1; min-height:0; }
+
+/* ===== Top navigation bar (Overview / Layers / Legend / Tools) ===== */
+.wm-nav-wrap { position:relative; flex-shrink:0; z-index:40; }
+.wm-nav { display:flex; align-items:center; gap:2px; padding:4px 10px; background:#0b2545; border-bottom:1px solid #1e3d63; }
+.wm-nav-btn { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border:0; border-radius:4px; background:transparent; color:#dbe4ee; font-size:13.5px; font-weight:600; }
+.wm-nav-btn:hover { background:rgba(255,255,255,.12); color:white; }
+.wm-nav-btn.is-active { background:rgba(255,255,255,.14); color:white; box-shadow:inset 0 -3px 0 #6ab6e8; }
+.wm-nav-ico { font-size:14px; opacity:.92; }
+.wm-nav-badge { min-width:19px; padding:1px 5px; border-radius:9px; background:#89a3c2; color:#0b2545; font-size:10.5px; font-weight:700; text-align:center; }
+.wm-nav-panel { display:none; position:absolute; top:100%; left:0; right:auto; width:min(440px, 42vw); height:calc(100dvh - 124px); max-height:none; overflow-y:auto; background:#2b3a44; color:#eef2f5; box-shadow:10px 10px 30px rgba(6,20,35,.45); }
+.wm-nav-panel.is-open { display:block; }
+.wm-nav-panel.is-overview { width:min(390px, 38vw); height:auto; max-height:520px; }
+.wm-nav-panel.is-layers { width:min(440px, 42vw); height:auto; max-height:calc(100dvh - 145px); }
+.wm-nav-panel.is-legend { width:min(430px, 42vw); height:auto; max-height:calc(100dvh - 145px); }
+.wm-nav-panel.is-tools { width:min(360px, 35vw); height:auto; max-height:430px; }
+.wm-nav-close { position:absolute; top:14px; left:16px; z-index:2; padding:6px 13px; border:1px solid #e8a13a; border-radius:3px; background:rgba(43,58,68,.9); color:#e8a13a; font-size:12.5px; font-weight:600; }
+.wm-nav-close:hover { background:#e8a13a; color:#2b3a44; }
+.wm-nav-title { padding:17px 80px 14px 140px; text-align:right; font:500 27px "Barlow Semi Condensed",sans-serif; letter-spacing:.4px; border-bottom:1px solid rgba(238,242,245,.16); }
+.wm-nav-body { padding:24px 40px 30px; }
+.wm-nav-welcome { max-width:560px; margin:0 auto; text-align:center; }
+.wm-nav-welcome h3 { margin:0; font:400 16px "Barlow Semi Condensed",sans-serif; color:#c3cfda; }
+.wm-nav-welcome h2 { margin:2px 0 0; font:500 27px "Barlow Semi Condensed",sans-serif; }
+.wm-nav-heading { display:block; margin:24px 0 0; padding:9px 0; border-bottom:1px solid rgba(238,242,245,.18); font-size:10.5px; font-weight:700; letter-spacing:1.8px; color:#c3cfda; }
+.wm-nav-row { display:grid; grid-template-columns:26px 120px 1fr; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(238,242,245,.12); text-align:left; }
+.wm-nav-row-ico { opacity:.7; }
+.wm-nav-row-label { font:500 18px "Barlow Semi Condensed",sans-serif; color:#b7c4d1; }
+.wm-nav-row-desc { font-size:13.5px; }
+.wm-nav-note { margin:18px 0 0; font-size:13.5px; line-height:1.6; color:#c3cfda; text-align:center; }
+.wm-nav-page .wm-nav-note { text-align:left; }
+.wm-nav-actions { display:flex; gap:12px; justify-content:center; margin-top:22px; }
+.wm-nav-action { padding:9px 16px; border:1px solid #6ab6e8; border-radius:3px; background:transparent; color:#9fcfef; font-size:13px; font-weight:600; }
+.wm-nav-action:hover { background:#6ab6e8; color:#12314f; }
+.wm-nav-page { max-width:620px; margin:0 auto; }
+.wm-nav-page h3 { margin:0 0 8px; font:500 24px "Barlow Semi Condensed",sans-serif; }
+.wm-nav-page p { margin:0; font-size:13.5px; color:#c3cfda; }
+.wm-nav-field-label { display:block; margin:22px 0 9px; font-size:9px; letter-spacing:1.5px; font-weight:700; color:#9fb2c2!important; }
+.wm-basemap-options { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.wm-basemap-options label { padding:10px 12px; border:1px solid rgba(238,242,245,.18); border-radius:4px; background:rgba(255,255,255,.04); cursor:pointer; font-size:12px; }
+.wm-basemap-options label:has(input:checked) { border-color:#6ab6e8; background:rgba(106,182,232,.17); color:white; }
+.wm-basemap-options input { accent-color:#6ab6e8; margin-right:5px; }
+.wm-hidden-control { display:none; }
+.wm-basemap-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
+.wm-basemap-card { padding:7px; border:1px solid rgba(238,242,245,.28); border-radius:2px; background:#68737b; color:#eef2f5; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; }
+.wm-basemap-card img { display:block; width:100%; aspect-ratio:240/115; object-fit:cover; margin-bottom:6px; border:1px solid rgba(255,255,255,.35); }
+.wm-basemap-card span { display:block; font-size:12px; line-height:1.2; }
+.wm-basemap-card:hover,.wm-basemap-card.is-selected { border-color:#6ab6e8; background:#3a5263; }
+.wm-nav-data-note { margin-top:18px; padding:10px 12px; border-left:3px solid #e8a13a; background:rgba(232,161,58,.08); color:#d4dfe7; font-size:11px; line-height:1.5; }
+.wm-nav-subtitle { margin:20px 0 8px; font:500 16px "Barlow Semi Condensed",sans-serif; color:#eef2f5; }
+.wm-nav-panel label { color:#e8edf2; }
+.wm-nav-actions { display:flex; gap:12px; justify-content:center; margin-top:22px; }
+.wm-nav-action { padding:9px 16px; border:1px solid #6ab6e8; border-radius:3px; background:transparent; color:#9fcfef; font-size:13px; font-weight:600; }
+.wm-nav-action:hover { background:#6ab6e8; color:#12314f; }
+.wm-nav-page { max-width:620px; margin:0 auto; }
+.wm-nav-page h3 { margin:0 0 8px; font:500 24px "Barlow Semi Condensed",sans-serif; }
+.wm-nav-legend-row, .wm-nav-legend-more div { display:flex; align-items:center; gap:10px; font-size:13.5px; }
+.wm-nav-legend-more { margin-top:18px; display:flex; flex-direction:column; gap:8px; }
+.wm-nav-legend-list { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.wm-app .wm-nav-legend-row i, .wm-app .wm-nav-legend-more i { width:14px; height:14px; border-radius:3px; display:inline-block; }
+
+.wm-map-area { flex:1; min-width:0; position:relative; background:#e9eff0; isolation:isolate; }
+.wm-map { position:absolute; inset:0; width:100%; height:100%; }
+.wm-map .js-plotly-plot,.wm-map .plot-container { height:100%!important; }
+.wm-station-popup { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(360px,calc(100% - 40px)); padding:20px; background:rgba(255,255,255,.96); border:1px solid #d6e0e7; border-radius:4px; box-shadow:0 10px 35px rgba(16,45,78,.2); z-index:8; }
+.wm-station-popup h3 { margin:0 28px 16px 0; font:600 17px "Barlow Semi Condensed",sans-serif; color:#172f50; }
+.wm-popup-close { position:absolute; top:12px; right:14px; border:0; background:transparent; color:#718391; font-size:22px; line-height:1; }
+.wm-popup-reading { display:flex; flex-direction:column; padding:13px 0; border-top:1px solid #e4ebef; border-bottom:1px solid #e4ebef; }
+.wm-popup-label { color:#738594; font-size:11px; }
+.wm-popup-value { margin:2px 0; font:600 34px "Barlow Semi Condensed",sans-serif; color:#102d4e; }
+.wm-popup-trend { color:#697f8f; font-size:11px; }
+.wm-popup-status { display:flex; align-items:center; gap:7px; margin:13px 0; color:#718391; font-size:11px; }
+.wm-popup-actions { display:flex; flex-direction:column; gap:5px; }
+.wm-popup-action { border:0; border-radius:2px; padding:10px 12px; background:#344f23; color:#fff; text-align:left; font-size:11px; font-weight:600; }
+.wm-popup-action.primary { background:#82ad2c; }
+.wm-popup-action:hover { filter:brightness(1.08); }
+/* Peta menjadi kanvas utama; ringkasan tersedia di rail dan drawer. */
+.wm-map-title,
+.wm-counts,
+.wm-dhompo,
+.wm-relief-legend,
+.wm-map-bottom .wm-legend { display:none; }
+.wm-map-top { position:absolute;top:22px;left:24px;right:20px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none; }
+.wm-map-title { padding:13px 17px; border:1px solid #ffffffa0; border-radius:6px; background:#ffffffed; box-shadow:0 2px 14px #102d4e08; }
+.wm-eyebrow { font-size:9px;letter-spacing:1.4px;font-weight:600;color:#748797; }
+.wm-map-title h2 { margin:5px 0; font:500 25px "Barlow Semi Condensed",sans-serif; }
+.wm-map-title p { margin:0;font-size:11px;color:#738493; }
+.wm-map-button { pointer-events:auto; border:1px solid #dbe3e8;border-radius:5px;background:white;color:var(--navy);padding:9px 11px;box-shadow:0 2px 12px #102d4e0b; }
+.wm-map-controls { display:flex;gap:5px; }
+.wm-counts { position:absolute; top:137px; left:24px; display:flex;gap:6px;flex-wrap:wrap;pointer-events:none; }
+.wm-counts>span { background:#ffffffef;border:1px solid #e1e8ec;padding:7px 10px;border-radius:4px;display:flex;align-items:center;gap:6px;font-size:10px;color:#627584; }
+.wm-counts strong { font-size:13px;color:var(--navy); }
+.wm-counts i,.wm-legend i,.wm-station-name i { display:inline-block;width:7px;height:7px;flex-shrink:0;border-radius:50%; }
+.wm-dhompo { position:absolute;right:22px;bottom:85px;background:#fffffff5;border:1px solid #dce5eb;border-left:3px solid var(--blue);border-radius:6px;padding:13px 16px;min-width:250px;box-shadow:0 4px 22px #102d4e12;pointer-events:none; }
+.wm-focus-heading { display:flex;align-items:center;gap:18px; }
+.wm-focus-value { margin-top:6px; }
+.wm-focus-value strong { font:600 37px "Barlow Semi Condensed",sans-serif; }
+.wm-focus-value>span { font-size:16px;color:#728595; }
+.wm-focus-value small { margin-left:20px;font-size:11px;color:#637887; }
+.wm-map-bottom { position:absolute;bottom:30px;left:24px;right:22px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px; }
+.wm-map-bottom details { background:white;border:1px solid #dce5eb;border-radius:5px;box-shadow:0 2px 12px #102d4e0b;padding:9px 12px; }
+.wm-map-bottom summary { cursor:pointer;font-size:11px; }
+.wm-map-bottom label { display:block;font-size:11px;margin-top:10px; }
+.wm-legend { display:flex;gap:13px;background:#ffffffed;padding:10px 12px;border:1px solid #e0e7eb;border-radius:5px; }
+.wm-legend span { display:flex;align-items:center;gap:5px;font-size:10px; }
+.wm-relief-legend { display:flex;gap:8px;background:#ffffffed;padding:8px 10px;border:1px solid #e0e7eb;border-radius:5px; }
+.wm-relief-legend span { display:flex;align-items:center;gap:4px;font-size:9px;color:#66798a; }
+.wm-relief-legend i { display:inline-block;width:10px;height:10px;border-radius:2px; }
+.wm-rail { display:none; }
+.wm-rail-heading { display:flex;align-items:center;justify-content:space-between;margin:20px 20px 13px; }
+.wm-total { font-size:10px;background:#edf3f7;border-radius:4px;padding:3px 7px; }
+.wm-search { width:calc(100% - 40px);margin:0 20px 9px;border:1px solid #dbe4eb;border-radius:5px;padding:9px 11px;background:#f8fafb;color:var(--navy);font-size:12px!important; }
+.wm-filter-wrap { margin:0 20px 11px; }
+#wm-filter { margin:0;font-size:11px;width:100%;border-color:#dbe4eb;color:var(--navy); }
+.wm-app .dash-slider-range,.wm-app .dash-slider-thumb { background:var(--blue); }
+.wm-app .dash-slider-track { background:#e6edf2; }
+.wm-app .dash-slider-mark { font-size:10px;color:#8495a2;white-space:nowrap; }
+.wm-app .dash-range-slider-input { display:none; }
+.wm-app input[type=checkbox],.wm-app input[type=radio] { accent-color:var(--blue); }
+.wm-table-head { display:flex;justify-content:space-between;padding:10px 20px 8px;color:#81929f;font-size:8px;letter-spacing:1px;border-bottom:1px solid #edf1f5; }
+.wm-list-area { flex:1;min-height:90px;overflow-y:auto;scrollbar-width:thin; }
+.wm-station { width:100%;border:0;border-bottom:1px solid #f0f3f5;border-left:3px solid transparent;background:white;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 18px 9px 17px;text-align:left;color:var(--navy); }
+.wm-station:hover { background:#f5f9fc; }
+.wm-station.is-selected { border-left-color:var(--blue);background:#edf6fb; }
+.wm-station-name { display:flex;align-items:center;gap:9px;min-width:0; }
+.wm-station strong { display:block;font-size:11px;font-weight:500; }
+.wm-station small { display:block;font-size:9px;color:#8594a0;margin-top:3px; }
+.wm-station-values { flex-shrink:0;text-align:right;font-variant-numeric:tabular-nums; }
+.wm-detail { padding:16px 20px 14px;border-top:1px solid #dce5eb;box-shadow:0 -4px 18px #102d4e04; }
+.wm-detail-top { display:flex;align-items:center;justify-content:space-between; }
+.wm-pill { display:inline-block;border-radius:4px;padding:3px 7px;font-size:9px;font-weight:600; }
+.wm-detail h2 { margin:8px 0 2px;font:600 23px "Barlow Semi Condensed",sans-serif; }
+.wm-level { font:500 46px "Barlow Semi Condensed",sans-serif;line-height:1.05; }
+.wm-level span { font:400 16px "IBM Plex Sans",sans-serif;color:#8b9ba7; }
+.wm-trend { margin:5px 0 12px;font-size:11px;color:#677d8d; }
+.wm-thresholds { display:flex;border-top:1px solid #edf1f5;border-bottom:1px solid #edf1f5;padding:9px 0;gap:35px; }
+.wm-thresholds small { display:block;font-size:8px;letter-spacing:1px;color:#8494a0;margin-bottom:3px; }
+.wm-thresholds strong { font-size:12px;font-weight:500; }
+.wm-peak { margin:10px 0 6px;font-size:10px;color:#65798a; }
+.wm-disclaimer { font-size:9px;color:#91a0ab; }
+.wm-empty { padding:25px 20px;color:#7c8e9c;font-size:12px;line-height:1.6; }
+.wm-rail-tabs { display:none; }
+.wm-chart-panel { height:250px;flex-shrink:0;border-top:1px solid #d5e0e8;display:flex;flex-direction:column;background:white;z-index:1; }
+.wm-chart-heading { height:42px;flex-shrink:0;padding:10px 24px 0;display:flex;justify-content:space-between;align-items:center;gap:15px; }
+.wm-chart-heading>div:first-child { display:flex;align-items:baseline;gap:15px; }
+.wm-chart-heading h2 { margin:0;font:600 18px "Barlow Semi Condensed",sans-serif; }
+.wm-chart-subtitle { font-size:10px;color:#91a0ab; }
+.wm-chart-actions { display:flex;gap:18px;align-items:center;font-size:10px;color:#728594; }
+.wm-chart-actions label { cursor:pointer; }
+.wm-key { color:#167cb5; }
+.wm-hydro { flex:1;min-height:0; }
+.wm-hydro .js-plotly-plot,.wm-hydro .plot-container { height:100%!important; }
+.wm-timeline { height:58px;flex-shrink:0;display:flex;align-items:center;gap:22px;border-top:1px solid #edf1f5;padding:0 28px 0 24px; }
+.wm-timeline button { border:0;border-radius:4px;padding:9px 16px;background:var(--navy);color:white;font-size:11px;min-width:82px; }
+.wm-timeline-label { display:flex;flex-direction:column;gap:3px;min-width:116px; }
+.wm-timeline-label strong { font-size:11px;font-weight:500; }
+.wm-timeline #wm-lead { flex:1;padding-top:7px!important; }
+.wm-app .rc-slider-track { background:var(--blue); }
+.wm-app .rc-slider-handle { border-color:var(--blue);background:white; }
+.wm-app .rc-slider-mark-text { font-size:10px;color:#8495a2;white-space:nowrap; }
+.wm-app .rc-slider-rail { background:#e6edf2; }
+.chart-collapsed .wm-hydro { display:none; }
+.chart-collapsed .wm-chart-panel { height:100px; }
+@media(min-width:1500px) { .wm-rail { width:360px; } .wm-station { padding-top:12px;padding-bottom:12px; } .wm-detail { padding-top:20px;padding-bottom:20px; } }
+@media(max-width:1100px) { .wm-location { display:none; } .wm-map-title h2 { font-size:21px; } .wm-rail { width:320px; } .wm-chart-subtitle { display:none; } .wm-legend { gap:7px; } .wm-map-top { left:15px;right:15px; } .wm-counts { left:15px; } .wm-map-bottom { left:15px;right:15px; } }
+@media(max-width:700px) {
+ .wm-app { height:100dvh;overflow-y:auto; }
+ .wm-header { height:76px;padding:0 14px 18px;gap:10px;flex-wrap:wrap;position:relative; }
+ .wm-brand>div { gap:8px; } .wm-brand h1 { font-size:24px; } .wm-brand span:not(.wm-logo) { font-size:7px;letter-spacing:1px; } .wm-logo { font-size:34px; }
+ .wm-demo { margin-left:auto;font-size:7px;padding:5px; } .wm-clock { display:flex;position:absolute;bottom:7px;left:14px;font-size:9px; }
+ .wm-workspace { flex:none;display:flex;flex-direction:column;min-height:0; }
+ .wm-map-area { flex:none;height:400px; }
+ .wm-map-top { top:12px;left:12px;right:12px;gap:8px; }
+ .wm-map-title { padding:10px 12px; } .wm-map-title h2 { font-size:19px; } .wm-map-title p { font-size:9px; } .wm-map-title .wm-eyebrow { font-size:7px; }
+ .wm-map-button { font-size:9px!important;padding:8px;white-space:nowrap; }
+ .wm-map-controls { flex-direction:column;align-items:flex-end; }
+ .wm-counts { top:107px;left:12px;gap:4px; } .wm-counts>span { font-size:8px;padding:5px 7px;gap:4px; }
+ .wm-counts strong { font-size:11px; }
+ .wm-dhompo { display:none; }
+ .wm-focus-value strong { font-size:30px; } .wm-focus-heading .wm-eyebrow { font-size:8px; }
+ .wm-map-bottom { left:12px;right:12px;bottom:27px;align-items:flex-start; }
+ .wm-legend { flex-wrap:wrap;max-width:225px;gap:7px 10px;padding:8px; } .wm-legend span { font-size:8px; }
+ .wm-relief-legend { display:none; }
+ .wm-map-bottom details { padding:8px; } .wm-map-bottom summary { font-size:9px;white-space:nowrap; }
+ .wm-rail { width:100%;height:285px;border-left:0;border-top:1px solid #dce5eb;position:relative; }
+ .wm-rail-heading { margin:12px 16px 9px; }
+ .wm-search { width:calc(60% - 20px);margin:0 0 10px 16px;font-size:11px!important; }
+ .wm-filter-wrap { position:absolute;right:16px;top:40px;width:36%;margin:0; }
+ #wm-filter { font-size:10px; }
+ .wm-rail-tabs { display:flex;gap:22px;margin:0 16px 5px;font-size:11px; } .wm-rail-tabs label { cursor:pointer; }
+ .wm-detail { display:none; } .detail-tab .wm-detail { display:block;overflow:auto;padding:10px 16px; } .detail-tab .wm-list-area { display:none; }
+ .wm-detail h2 { margin:5px 0; font-size:20px; } .wm-level { font-size:30px; } .wm-thresholds { float:right;margin-top:-55px;gap:15px;border:0; } .wm-peak { margin:6px 0; }
+ .wm-chart-panel { height:285px; } .wm-chart-heading { padding:10px 16px 0;height:58px;align-items:flex-start; } .wm-chart-heading h2 { font-size:17px; }
+ .wm-chart-actions { font-size:9px; } .wm-key { display:none; }
+ .wm-timeline { padding:0 18px 0 12px;gap:10px;height:62px; } .wm-timeline-label { display:none; } .wm-timeline button { min-width:62px;padding:8px;font-size:10px; } .wm-app .rc-slider-mark-text { font-size:8px; }
+ .wm-app .dash-slider-mark { font-size:8px; }
+ .chart-collapsed .wm-chart-panel { height:120px; }
+}
+@media(max-width:700px) {
+ .wm-nav-panel,.wm-nav-panel.is-overview,.wm-nav-panel.is-layers,.wm-nav-panel.is-legend,.wm-nav-panel.is-tools { left:0;right:0;width:100%;height:auto;max-height:calc(100dvh - 134px); }
+}
+@media(prefers-reduced-motion:reduce) { .wm-app *, .wm-app *::before,.wm-app *::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; } }
+
+/* Keep the map canvas clear; these summaries remain in the right rail/drawers. */
+.wm-map-title,
+.wm-counts,
+.wm-dhompo,
+.wm-relief-legend,
+.wm-map-bottom .wm-legend { display:none !important; }

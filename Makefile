@@ -1,4 +1,4 @@
-.PHONY: train-sklearn train-dhompo train-surabaya check-surabaya up down test test-features test-models test-api mlflow-ui install install-dev docs
+.PHONY: train-sklearn train-dhompo train-surabaya check-surabaya up down test test-features test-models test-api mlflow-ui install install-dev docs gold geodata
 
 # Training
 train-sklearn: train-dhompo
@@ -18,6 +18,14 @@ up:
 
 down:
 	docker compose down
+
+# Gold dataset (dibangun untuk dashboard, pakai venv repo)
+gold:
+	.venv/Scripts/python.exe scripts/build_gold.py
+
+# Layer geospasial ITS Water Dashboard (butuh: pip install -e ".[geodata]")
+geodata:
+	.venv/Scripts/python.exe scripts/build_geodata.py
 
 # Testing
 test:

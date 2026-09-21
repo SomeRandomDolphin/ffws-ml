@@ -3,6 +3,7 @@
 | Lokasi lokal | Isi |
 |---|---|
 | `data/` | Dataset Dhompo: `data-raw.xlsx`, `data-clean.csv`, dan `Data generated 2023.xlsx` |
+| `data/gold/` | Dataset kurasi dashboard (`hydro.csv` + `stations.csv`), hasil `make gold` — lihat `data/gold/README.md` |
 | `data/surabaya/` | Dataset Surabaya: `ketinggian_30menit_wide.csv` |
 
 Data Dhompo menggunakan meter, Surabaya sentimeter. Keduanya memakai observasi 30 menit dengan schema berbeda. Data generated 2023 merupakan sumber eksperimen tersendiri dan jangan diperlakukan sebagai pengganti data mentah.
