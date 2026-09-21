@@ -1,4 +1,16 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: welang_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - SURABAYA_API_URL=http://api:8000
+    depends_on:
+      - api
+
   mlflow:
     image: ghcr.io/mlflow/mlflow:v3.10.1
     container_name: dhompo_mlflow
@@ -37,6 +49,7 @@ services:
       - ./configs:/app/configs:ro
       - ./mlruns:/mlruns
       - ./models:/app/models:ro
+      - ./artifacts/surabaya:/app/artifacts/surabaya
 
 networks:
   default:

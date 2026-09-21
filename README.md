@@ -80,9 +80,30 @@ Fungsi metrik bersama berada di `training/evaluate.py`; helper figur di `researc
 uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
-API menyediakan `GET /health`, `GET /model-info`, dan `POST /predict`. Swagger tersedia di `http://localhost:8000/docs`; contoh request ada di [payload.json](payload.json). Artefak model perlu tersedia sebelum prediksi dapat dilayani.
+API menyediakan `GET /health`, `GET /model-info`, `POST /predict` (Dhompo
+h1–h5), dan `POST /predict-multistation` (hybrid 15 stasiun h1–h6). Swagger
+tersedia di `http://localhost:8000/docs`; contoh request Dhompo lama ada di
+[payload.json](payload.json). Artefak model perlu tersedia sebelum prediksi
+dapat dilayani.
 
 Lihat [panduan API, Docker, dan MLflow](docs/deployment/index.md) untuk konfigurasi backend, kontrak input, dan pemeriksaan readiness.
+
+## Dashboard visualisasi DAS Dhompo
+
+**Welang Water Monitor** adalah prototipe frontend berbasis Dash: peta terang,
+15 stasiun Welang, daftar status, detail stasiun, grafik hujan/muka air, dan
+timeline hingga +5 jam. Data simulasi deterministik berjalan tanpa model ML
+atau dataset historis. Label demo selalu ditampilkan.
+
+```powershell
+python -m pip install -e ".[dashboard]"
+python run_dashboard.py
+```
+
+Buka `http://localhost:8050`. Jika server lama masih aktif, hentikan dengan
+`Ctrl+C` lalu jalankan kembali. Cara menggunakan prototipe dan dokumentasi versi
+sebelumnya ada di [panduan dashboard](docs/dashboard/index.md).
+Untuk memakai port lain: `python run_dashboard.py --port 8061`.
 
 ## Pengujian dan catatan repository
 

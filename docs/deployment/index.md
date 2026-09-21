@@ -1,6 +1,8 @@
 # API dan Deployment Dhompo
 
-API yang tersedia melayani **Dhompo**, dengan tinggi muka air dalam **meter**. Alur Surabaya menggunakan predictor Python seperti dijelaskan dalam [panduan Surabaya](../surabaya/index.md).
+API menyediakan kontrak lama khusus **Dhompo** dan kontrak hybrid untuk **15
+stasiun DAS Welang**, dengan tinggi muka air dalam **meter**. Alur Surabaya
+menggunakan predictor Python seperti dijelaskan dalam [panduan Surabaya](../surabaya/index.md).
 
 ## Menjalankan layanan
 
@@ -34,6 +36,46 @@ Swagger: `http://localhost:8000/docs`.
 - Gunakan `/model-info` untuk nama stasiun serta kebutuhan history, dan `payload.json` di root sebagai contoh lengkap.
 - Response berisi `predictions.h1`–`h5`, backend/model, waktu observasi dan prediksi, serta metadata `serving_tier`, `degradation`, `shadow_predictions`, dan `quality_flags`.
 - Tier-B adalah fallback berbasis history Dhompo ketika ketiga telemetri utama bermasalah. Schema dan validasi input tetap berlaku ketika fallback digunakan.
+
+## Kontrak hybrid multi-stasiun
+
+`POST /predict-multistation` menerima 48 observasi (24 jam) untuk seluruh 15
+stasiun dan menghasilkan h1–h6 untuk setiap stasiun. Ada dua mode:
+
+1. Berikan `future_rainfall` berisi tepat 12 angka mm/30 menit. Response
+   deterministik memakai `future_rainfall_mode=provided` dan
+   `scenario_spread=null`.
+2. Jangan berikan `future_rainfall`. API membangkitkan ensemble Markov-Gamma
+   (`scenario_count` 2–200; default 20) dan mengembalikan median serta
+   `scenario_spread` P10/P50/P90.
+
+```json
+{
+  "history": [
+    {
+      "timestamp": "2023-03-13T12:30:00",
+      "readings": {
+        "Bd. Sentono": 681.5,
+        "Bd. Suwoto": 505.7,
+        "Dhompo": 9.3,
+        "Jalan Nasional": 3.6
+      }
+    }
+  ],
+  "scenario_count": 20,
+  "seed": 42
+}
+```
+
+Contoh di atas disingkat; setiap baris wajib memuat semua 15 stasiun dan daftar
+`history` wajib berisi 48 baris berjarak tepat 30 menit. `/model-info`
+melaporkan readiness hybrid secara terpisah dari backend `/predict` lama.
+
+`scenario_spread` **bukan prediction interval terkalibrasi**. Evaluasi held-out
+menunjukkan coverage P10–P90 hanya sekitar 5–28%, sehingga response selalu
+menyertakan `operationally_validated=false` dan
+`uncertainty_calibrated=false`. Nilai hanya sesuai untuk riset dan analisis
+skenario, bukan keputusan operasional.
 
 | Status | Makna |
 |---|---|

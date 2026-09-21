@@ -4,7 +4,7 @@ Skenario ini memprediksi tinggi air perkotaan dalam **sentimeter**, dengan targe
 
 ## 1. Data dan EDA
 
-Dataset ada di `data/surabaya/ketinggian_30menit_wide.csv`, dengan kolom waktu `timestamp`. Konfigurasi mencakup Hang Tuah, Kalibokor, Rumah Pompa Pucang, dan PLN Menur, masing-masing dengan sinyal tinggi air dan curah hujan serta komponen sensor A/B.
+Dataset ada di `data/surabaya/ketinggian_30menit_wide.csv`, dengan kolom waktu `timestamp`. Konfigurasi mencakup Hang Tuah, Kalibokor, Rumah Pompa Pucang, dan Sebrang Perpustaan Jawa Timur, masing-masing dengan sinyal tinggi air dan curah hujan serta komponen sensor A/B.
 
 Mulai dari `research/surabaya/01_eda_surabaya.ipynb`. Notebook membahas coverage, missingness, outlier, korelasi, pola temporal, dan perbandingan dengan persistence. Jalankan sel berurutan dari root repository atau folder notebook. Output tersimpan adalah hasil eksekusi sebelumnya dan tetap dipertahankan.
 
@@ -74,6 +74,29 @@ print(result.predictions)  # h1–h5 dalam sentimeter
 ```
 
 Ini adalah penggunaan predictor Python. FastAPI yang ada saat ini melayani Dhompo dan memakai schema stasiun serta satuan berbeda.
+
+## 5.1. Sumber database live
+
+Pemetaan database dan sensor disimpan di `configs/surabaya/live_sources.yaml`.
+Kredensial berada di `configs/surabaya/database.local.yaml`, yang diabaikan Git.
+Pemetaan lokasi telah dikonfirmasi: `dbpvwemon` = Hang Tuah,
+`dbpvwemonbaru` = Kalibokor, `dbpvwemonbaru2` = Rumah Pompa Pucang,
+dan `dbpvwemonbaru3` = Sebrang Perpustaan Jawa Timur.
+
+Sesuai persetujuan pengguna, `distance`, `distance1`, dan `distance2` sementara
+dianggap tinggi air dalam cm, dengan status **belum terverifikasi**. Konversi
+untuk tampilan meter adalah nilai dibagi 100. Nilai mentah, termasuk nol,
+dipertahankan; makna nol belum dikonfirmasi. Pembacaan tiap sensor tetap
+terpisah, tanpa rata-rata A/B atau pemilihan sensor utama secara otomatis.
+Prediksi dan status bahaya untuk sumber live belum diaktifkan.
+
+Kolom hujan dicatat sebagai data mentah; satuan dan periode akumulasinya perlu
+dikonfirmasi. Sebrang Perpustaan Jawa Timur tidak memiliki kolom hujan, sehingga data hujannya
+tidak tersedia, bukan nol.
+
+Konfigurasi ini belum dihubungkan ke dashboard atau predictor. Pipeline CSV
+historis di atas tetap menggunakan preprocessing sendiri, termasuk rata-rata
+A/B; kebijakan tersebut belum boleh diterapkan otomatis ke sumber live.
 
 ## 6. Membaca hasil
 

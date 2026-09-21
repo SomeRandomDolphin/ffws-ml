@@ -70,8 +70,9 @@ nav:
           - Rancangan Adaptive: dhompo/ARCHITECTURE.md
   - Surabaya:
       - Panduan Riset: surabaya/index.md
-  - Peta Kode: code-map.md
+- Peta Kode: code-map.md
   - Migrasi Struktur: migration.md
+  - Dashboard DAS Dhompo: dashboard/index.md
   - Deployment Dhompo:
       - API & Serving: deployment/index.md
       - Docker & MLflow: deployment/docker-mlflow.md

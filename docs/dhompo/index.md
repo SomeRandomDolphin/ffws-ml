@@ -56,6 +56,18 @@ python training/dhompo/train_sklearn.py --config configs/shared/sklearn_model.ya
 # Baseline satu sumber
 python training/dhompo/train_sklearn.py --single-source 2022_clean
 
+# Baseline seluruh 15 stasiun, horizon +1 sampai +6 jam
+python training/dhompo/train_multistation.py
+
+# Kalibrasi dan bangun skenario sintetis 15 stasiun (default 10 tahun)
+python scripts/build_synthetic.py
+
+# Simulator backbone + korektor residual multi-stasiun
+python training/dhompo/train_hybrid.py
+
+# Evaluasi ensemble hujan dan figur ketidakpastian
+python training/dhompo/evaluate_hybrid_ensemble.py
+
 # Eksperimen fitur progresif
 python training/dhompo/run_experiments.py --all
 
@@ -71,6 +83,8 @@ Hyperparameter sklearn bersama ada di `configs/shared/sklearn_model.yaml`. Penga
 | `run_delta_experiment.py`, `run_smoothing_experiment.py` | Variasi target delta dan smoothing |
 | `run_peak_weighted_experiment.py`, `flood_event_cv.py`, `diagnose_regime_errors.py` | Evaluasi kejadian banjir dan kesalahan menurut rezim |
 | `run_tier_a_adaptive.py` | Training adaptive dengan kualitas sensor |
+| `train_multistation.py` | Baseline 15 stasiun: persistence, Ridge, dan HistGradientBoosting untuk +1..+6 jam |
+| `train_hybrid.py` | Simulator train-only + korektor residual 15 stasiun untuk +1..+6 jam |
 | `export_pred_vs_truth_combined.py` | Laporan prediksi dan observasi eksperimen A/B/C |
 | `generate_experiment_tables.py`, `generate_best_per_experiment.py` | Turunan tabel eksperimen yang sudah tersedia |
 
