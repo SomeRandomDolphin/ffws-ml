@@ -76,6 +76,8 @@ locations:
       id_column: id
       timestamp_column: waktu
       columns: [distance1, distance2]
+      measurement: distance_to_surface
+      reference_cm: 530.0
     rainfall:
       table: esp1
       id_column: id
@@ -95,4 +97,6 @@ locations:
       id_column: id
       timestamp_column: waktu
       columns: [distance1]
+      measurement: distance_to_surface
+      calibration_required: true
     rainfall: null

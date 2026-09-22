@@ -23,6 +23,7 @@ def build_urban_forecast_features(
     include_quality_flags: bool = True,
     lag_steps: tuple[int, ...] | list[int] = DEFAULT_LAG_STEPS,
     rolling_windows: tuple[tuple[int, str], ...] | list[tuple[int, str]] = DEFAULT_ROLLING_WINDOWS,
+    pump_control: dict | None = None,
 ) -> pd.DataFrame:
     """Build time-series features for direct multi-horizon forecasting.
 
@@ -68,6 +69,40 @@ def build_urban_forecast_features(
                 cols[f"{col}_flag_stale_lag{lag}"] = stale.shift(int(lag))
                 cols[f"{col}_flag_missing_lag{lag}"] = missing.shift(int(lag))
                 cols[f"{col}_flag_outlier_lag{lag}"] = outlier.shift(int(lag))
+
+    pump_control = pump_control or {}
+    level_column = pump_control.get("level_column")
+    if level_column in values.columns:
+        level = values[level_column]
+        startup = pump_control.get("startup_threshold_cm")
+        shutoff = pump_control.get("shutoff_threshold_cm")
+        if startup is not None:
+            cols["pump_level_above_startup"] = (level >= float(startup)).astype(float)
+            cols["pump_margin_to_startup_cm"] = level - float(startup)
+        if shutoff is not None:
+            cols["pump_level_below_shutoff"] = (level <= float(shutoff)).astype(float)
+            cols["pump_margin_to_shutoff_cm"] = level - float(shutoff)
+        if startup is not None and shutoff is not None:
+            cols["pump_level_in_hysteresis_band"] = (
+                (level > float(shutoff)) & (level < float(startup))
+            ).astype(float)
+
+    activity_columns = [
+        str(column)
+        for column in pump_control.get("activity_columns", [])
+        if str(column) in values.columns
+    ]
+    if activity_columns:
+        threshold = float(pump_control.get("active_threshold", 0.0))
+        active_matrix = values[activity_columns].fillna(0.0).gt(threshold)
+        pump_active = active_matrix.any(axis=1).astype(float)
+        cols["pump_active"] = pump_active
+        cols["pump_count_active"] = active_matrix.sum(axis=1).astype(float)
+        run_group = pump_active.ne(pump_active.shift()).cumsum()
+        cols["pump_runtime_steps"] = (
+            pump_active.groupby(run_group).cumcount().add(1).mul(pump_active)
+        )
+        cols["pump_state_changed"] = pump_active.diff().abs().fillna(0.0)
 
     hour = values.index.hour + values.index.minute / 60.0
     cols["hour_sin"] = pd.Series(np.sin(2 * np.pi * hour / 24), index=values.index)

@@ -69,6 +69,39 @@ def test_limited_forward_fill_marks_stale_and_missing():
     ]
 
 
+def test_distance_transform_and_telemetry_are_canonicalized():
+    idx = pd.date_range("2026-01-01", periods=2, freq="30min", name="Datetime")
+    raw = pd.DataFrame(
+        {"distance1": [400.0, 390.0], "pump_rpm": [0.0, 1200.0]}, index=idx
+    )
+    config = {
+        "locations": [
+            {
+                "key": "pucang",
+                "name": "Pucang",
+                "water_level": {
+                    "canonical": "muka_air_pucang",
+                    "components": ["distance1"],
+                    "transform": {
+                        "type": "reference_minus_distance",
+                        "reference_cm": 530,
+                    },
+                },
+                "telemetry": {
+                    "canonical": "rpm_pompa_pucang",
+                    "components": ["pump_rpm"],
+                },
+            }
+        ]
+    }
+
+    canonical, coverage, _ = canonicalize_urban_wide(raw, signal_specs(config))
+
+    assert canonical["muka_air_pucang"].tolist() == [130.0, 140.0]
+    assert canonical["rpm_pompa_pucang"].tolist() == [0.0, 1200.0]
+    assert set(coverage["kind"]) == {"water_level", "telemetry"}
+
+
 def test_real_csv_preprocesses_with_expected_default_target():
     result = preprocess_urban_wide_data()
 

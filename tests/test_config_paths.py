@@ -67,3 +67,13 @@ def test_existing_absolute_artifact_keeps_its_location(tmp_path):
 
 def test_relative_artifact_subdirectories_are_preserved(tmp_path):
     assert resolve_artifact_path(tmp_path, "h1/model.pkl") == tmp_path / "h1/model.pkl"
+
+
+def test_pucang_config_requires_calibrated_level_and_pump_telemetry():
+    config = load_yaml_config("configs/surabaya/pucang_pump_aware.yaml")
+
+    assert config["target_column"] == "muka_air_lokasi_3_rumah_pompa_pucang"
+    assert config["validation"]["gap_steps"] == 10
+    location = config["locations"][0]
+    assert location["water_level"]["transform"]["reference_cm"] == 530.0
+    assert len(config["features"]["required_signals"]) == 3

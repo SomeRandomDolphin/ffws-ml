@@ -105,3 +105,16 @@ Gunakan NSE, RMSE, MAE, R², dan PBIAS dari metrik bersama `training/evaluate.py
 Periksa metadata untuk fitur terpilih, coverage sensor, cleaning, rentang waktu, jumlah baris train/test, mode target, serta model terbaik tiap horizon. Jangan membandingkan angka RMSE mentah Surabaya dengan Dhompo karena satuannya berbeda.
 
 Artefak lokal lama dapat mengeluarkan peringatan perbedaan versi scikit-learn atau XGBoost ketika dimuat dalam environment baru. Gunakan versi library dari run asal untuk reproduksi ilmiah; penataan folder tidak mengonversi atau melatih ulang artefak tersebut.
+
+## 7. Model pump-aware Rumah Pompa Pucang
+
+Konfigurasi `configs/surabaya/pucang_pump_aware.yaml` memodelkan muka air Pucang sebagai `530 - distance` dan memakai target residual terhadap persistence. Setiap horizon +1 sampai +5 jam memiliki model langsung yang terpisah. Pemilihan model menggunakan expanding-window validation dengan gap 10 langkah atau 5 jam, sehingga label antar-split tidak bertumpang tindih. Error absolut out-of-fold persentil ke-90 disimpan sebagai interval prediksi.
+
+Training pump-aware memerlukan tiga sinyal operasi bertimestamp: status pompa, RPM, dan debit. Pipeline berhenti jika sinyal tersebut tidak lolos pemeriksaan coverage. Pemeriksaan schema pada 22 September 2026 menemukan `dbpvwemonbaru2.esp1` hanya berisi `distance1`, `distance2`, `curah_hujan`, `curah_hujan_1h`, `jumlah_tip`, dan `waktu`; belum ada telemetry operasi pompa pada sumber live Pucang tersebut. Nama kolom kontrak pada konfigurasi harus dipetakan ke sumber telemetry yang sebenarnya sebelum training:
+
+```powershell
+python training/surabaya/train_urban_sklearn.py --config configs/surabaya/pucang_pump_aware.yaml --dry-run
+python training/surabaya/train_urban_sklearn.py --config configs/surabaya/pucang_pump_aware.yaml --models ridge,gradient_boosting
+```
+
+Sebrang Perpustakaan belum memiliki referensi tinggi sensor terhadap dasar atau datum. Konfigurasi live menandainya `calibration_required`; jangan melatih atau menampilkan prediksi muka air absolut sebelum nilai referensi itu diverifikasi. Sinyal silang Pucang juga belum digunakan sampai arah jaringan drainase dan lead-lag kausalnya terbukti.

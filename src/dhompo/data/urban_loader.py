@@ -30,6 +30,7 @@ class UrbanSignalSpec:
     kind: str
     location_key: str
     location_name: str
+    transform: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -60,10 +61,16 @@ def signal_specs(config: dict[str, Any]) -> list[UrbanSignalSpec]:
 
     specs: list[UrbanSignalSpec] = []
     for loc in config.get("locations", []):
+        signals: list[tuple[str, dict[str, Any]]] = []
         for kind in ("water_level", "rainfall"):
             signal = loc.get(kind)
-            if not signal:
-                continue
+            if signal:
+                signals.append((kind, signal))
+        telemetry = loc.get("telemetry") or []
+        if isinstance(telemetry, dict):
+            telemetry = [telemetry]
+        signals.extend(("telemetry", signal) for signal in telemetry)
+        for kind, signal in signals:
             specs.append(
                 UrbanSignalSpec(
                     canonical=str(signal["canonical"]),
@@ -71,6 +78,7 @@ def signal_specs(config: dict[str, Any]) -> list[UrbanSignalSpec]:
                     kind=kind,
                     location_key=str(loc["key"]),
                     location_name=str(loc["name"]),
+                    transform=signal.get("transform"),
                 )
             )
     return specs
@@ -143,6 +151,13 @@ def canonicalize_urban_wide(
             merged = pd.concat(component_values, axis=1).mean(axis=1, skipna=True)
         else:
             merged = pd.Series(float("nan"), index=raw.index, dtype="float64")
+
+        transform = spec.transform or {}
+        transform_type = transform.get("type")
+        if transform_type == "reference_minus_distance":
+            merged = float(transform["reference_cm"]) - merged
+        elif transform_type not in (None, "identity"):
+            raise ValueError(f"Unsupported signal transform: {transform_type}")
 
         canonical_cols[spec.canonical] = merged.astype("float64")
         non_null = int(merged.notna().sum())

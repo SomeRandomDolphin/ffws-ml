@@ -81,3 +81,35 @@ def test_missing_feature_values_use_sentinel_when_flags_are_available():
     assert not X.empty
     assert X["sparse_t0"].iloc[-1] == 0.0
     assert X["sparse_flag_missing"].iloc[-1] == 1.0
+
+
+def test_pump_control_features_capture_switching_and_hysteresis():
+    idx = pd.date_range("2026-01-01", periods=6, freq="30min", name="Datetime")
+    values = pd.DataFrame(
+        {
+            "level": [90.0, 105.0, 130.0, 125.0, 95.0, 80.0],
+            "pump_rpm": [0.0, 0.0, 1200.0, 1200.0, 1200.0, 0.0],
+        },
+        index=idx,
+    )
+
+    X = build_urban_forecast_features(
+        values,
+        feature_columns=["level", "pump_rpm"],
+        include_quality_flags=False,
+        lag_steps=[1],
+        rolling_windows=[(2, "1h")],
+        pump_control={
+            "level_column": "level",
+            "activity_columns": ["pump_rpm"],
+            "active_threshold": 1,
+            "startup_threshold_cm": 120,
+            "shutoff_threshold_cm": 90,
+        },
+    )
+
+    assert X.loc[idx[2], "pump_active"] == 1.0
+    assert X.loc[idx[3], "pump_runtime_steps"] == 2.0
+    assert X.loc[idx[2], "pump_level_above_startup"] == 1.0
+    assert X.loc[idx[4], "pump_level_in_hysteresis_band"] == 1.0
+    assert X.loc[idx[5], "pump_state_changed"] == 1.0
