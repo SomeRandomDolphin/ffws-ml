@@ -13,7 +13,7 @@ export default function RegionFilter({ value, onChange, onOpen }: { value: Regio
 
   useEffect(() => {
     if (!open) return;
-    root.current?.querySelector<HTMLInputElement>("input:checked")?.focus();
+    root.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
     const dismiss = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node)) setOpen(false);
     };
@@ -30,14 +30,14 @@ export default function RegionFilter({ value, onChange, onOpen }: { value: Regio
       if (open) close();
       else { onOpen(); setOpen(true); }
     }}><Icon name="filter" /></button>
-    {open && <fieldset id="region-filter-options" className="region-filter-options">
-      <legend className="sr-only">Cakupan pencarian</legend>
-      {regionOrder.map(key => <label key={key} className={value === key ? "is-selected" : ""}>
+    {open && <div id="region-filter-options" className="region-filter-options" role="group" aria-label="Cakupan pencarian">
+      {regionOrder.map(key => <button key={key} type="button" aria-pressed={value === key} className={value === key ? "is-selected" : ""} onClick={() => {
+        onChange(key);
+        close();
+      }}>
         <span>{regionPresets[key].label}</span>
-        <input type="radio" name="map-region" value={key} checked={value === key} onChange={() => onChange(key)} onClick={event => { if (event.detail > 0) close(); }} onKeyDown={event => {
-          if (event.key === "Enter") { event.preventDefault(); close(); }
-        }} />
-      </label>)}
-    </fieldset>}
+        <span aria-hidden="true">{value === key ? "✓" : ""}</span>
+      </button>)}
+    </div>}
   </div>;
 }

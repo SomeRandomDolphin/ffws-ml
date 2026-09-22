@@ -73,11 +73,9 @@
 .region-filter-trigger svg { width:21px; height:21px; }
 .search-scope .region-filter-trigger[aria-expanded=true] { background:var(--color-selection-bg); color:var(--blue); }
 .region-filter-options { position:absolute; top:calc(100% + 8px); right:-8px; width:180px; max-width:calc(100vw - 92px); margin:0; padding:4px; border:1px solid var(--color-control-border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
-.region-filter-options legend { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
-.region-filter-options label { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; padding:8px 10px; border-radius:var(--radius-badge); color:var(--navy); font-size:var(--text-label); cursor:pointer; }
-.region-filter-options label:hover { background:var(--color-surface-hover); }
-.region-filter-options label.is-selected { color:var(--navy); font-weight:600; }
-.station-search .region-filter-options input { flex:0 0 18px; width:18px; height:18px; margin:0; accent-color:var(--blue); outline-offset:3px; cursor:pointer; }
+.station-search .region-filter-options button { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:44px; padding:8px 10px; border-radius:var(--radius-badge); color:var(--navy); font-size:var(--text-label); text-align:left; cursor:pointer; }
+.station-search .region-filter-options button:hover { background:var(--color-surface-hover); }
+.station-search .region-filter-options button.is-selected { color:var(--navy); font-weight:600; }
 .station-search form { display:flex; align-items:center; gap:8px; height:50px; background:var(--surface); border:1px solid var(--color-control-border); border-radius:var(--radius); box-shadow:var(--shadow); padding:0 8px 0 10px; }
 .station-search form > svg { flex-shrink:0; color:var(--muted); }
 .station-search input { width:100%; min-width:0; height:100%; border:0; background:transparent; color:var(--navy); outline-offset:-4px; font-size:var(--text-body); }
