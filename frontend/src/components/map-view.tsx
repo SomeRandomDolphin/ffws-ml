@@ -231,9 +231,9 @@ export default function MapView(props: Props) {
       map.addLayer({ id: "subdas-fill", type: "fill", source: "subdas", minzoom: 8.8, layout: { visibility: visible("subdas") }, paint: { "fill-color": ["match", ["get", "station_confidence"], "Tinggi", "#4a9c7d", "Sedang-Tinggi", "#73aa82", "Sedang", "#9eb77b", "#c5b46a"], "fill-opacity": .15 * latest.current.opacity.subdas } });
       map.addLayer({ id: "subdas-outline", type: "line", source: "subdas", minzoom: 8.8, layout: { visibility: visible("subdas") }, paint: { "line-color": "#538e76", "line-width": 1.1, "line-opacity": latest.current.opacity.subdas } });
       map.addSource("rivers", { type: "geojson", data: emptyGeoJSON });
-      map.addLayer({ id: "river-lines", type: "line", source: "rivers", minzoom: 8.5, layout: { visibility: visible("topology"), "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["match", ["get", "waterway"], "river", "#247eb5", "canal", "#6ea8c5", "#4a98c5"], "line-width": ["match", ["get", "waterway"], "river", 2.8, "canal", 1.6, 1.15], "line-opacity": latest.current.opacity.topology } });
+      for (const [id, kind, width, dash] of [["river-lines", "river", 2.8, undefined], ["canal-lines", "canal", 1.6, [2, 2]], ["stream-lines", "stream", 1.15, [1, 2]]] as const) map.addLayer({ id, type: "line", source: "rivers", minzoom: 8.5, filter: ["==", ["get", "waterway"], kind], layout: { visibility: visible("topology"), "line-cap": "round", "line-join": "round" }, paint: { "line-color": kind === "river" ? "#247eb5" : kind === "canal" ? "#6ea8c5" : "#4a98c5", "line-width": width, ...(dash ? { "line-dasharray": [...dash] } : {}), "line-opacity": latest.current.opacity.topology } });
       map.addSource("surabaya-rivers", { type: "geojson", data: emptyGeoJSON });
-      map.addLayer({ id: "surabaya-river-lines", type: "line", source: "surabaya-rivers", minzoom: 8.5, layout: { visibility: latest.current.activeLayers.includes("surabayaRivers") && latest.current.region === "surabaya" ? "visible" : "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["match", ["get", "waterway"], "river", "#247eb5", "canal", "#6ea8c5", "#4a98c5"], "line-width": ["match", ["get", "waterway"], "river", 2.8, "canal", 1.6, 1.15], "line-opacity": latest.current.opacity.surabayaRivers } });
+      for (const [id, kind, width, dash] of [["surabaya-river-lines", "river", 2.8, undefined], ["surabaya-canal-lines", "canal", 1.6, [2, 2]], ["surabaya-stream-lines", "stream", 1.15, [1, 2]]] as const) map.addLayer({ id, type: "line", source: "surabaya-rivers", minzoom: 8.5, filter: ["==", ["get", "waterway"], kind], layout: { visibility: latest.current.activeLayers.includes("surabayaRivers") && latest.current.region === "surabaya" ? "visible" : "none", "line-cap": "round", "line-join": "round" }, paint: { "line-color": kind === "river" ? "#247eb5" : kind === "canal" ? "#6ea8c5" : "#4a98c5", "line-width": width, ...(dash ? { "line-dasharray": [...dash] } : {}), "line-opacity": latest.current.opacity.surabayaRivers } });
     });
     loadGeoAssets().then(data => {
       if(disposed) return;
@@ -324,8 +324,8 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    for (const [id, key] of [["regencies-fill", "admin"], ["regencies-outline", "admin"], ["east-river-lines", "regionalRivers"], ["basin-fill", "basin"], ["basin-outline", "basin"], ["subdas-fill", "subdas"], ["subdas-outline", "subdas"], ["river-lines", "topology"], ["surabaya-river-lines", "surabayaRivers"]] as const) {
-      const inRegion = key !== "surabayaRivers" || props.region === "surabaya";
+    for (const [id, key] of [["regencies-fill", "admin"], ["regencies-outline", "admin"], ["east-river-lines", "regionalRivers"], ["basin-fill", "basin"], ["basin-outline", "basin"], ["subdas-fill", "subdas"], ["subdas-outline", "subdas"], ["river-lines", "topology"], ["canal-lines", "topology"], ["stream-lines", "topology"], ["surabaya-river-lines", "surabayaRivers"], ["surabaya-canal-lines", "surabayaRivers"], ["surabaya-stream-lines", "surabayaRivers"]] as const) {
+      const inRegion = key === "topology" ? props.region === "welang" : key !== "surabayaRivers" || props.region === "surabaya";
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", props.activeLayers.includes(key) && inRegion ? "visible" : "none");
     }
   }, [props.activeLayers, props.region, ready]);
@@ -333,8 +333,8 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     basemapController.current?.setOpacity(props.opacity.basemap);
-    if(map?.getLayer("river-lines")) map.setPaintProperty("river-lines","line-opacity",props.opacity.topology);
-    if(map?.getLayer("surabaya-river-lines")) map.setPaintProperty("surabaya-river-lines","line-opacity",props.opacity.surabayaRivers);
+    for (const id of ["river-lines", "canal-lines", "stream-lines"]) if(map?.getLayer(id)) map.setPaintProperty(id,"line-opacity",props.opacity.topology);
+    for (const id of ["surabaya-river-lines", "surabaya-canal-lines", "surabaya-stream-lines"]) if(map?.getLayer(id)) map.setPaintProperty(id,"line-opacity",props.opacity.surabayaRivers);
     if(map?.getLayer("subdas-outline")) map.setPaintProperty("subdas-outline","line-opacity",props.opacity.subdas);
     if(map?.getLayer("subdas-fill")) map.setPaintProperty("subdas-fill","fill-opacity",.15 * props.opacity.subdas);
     if(map?.getLayer("basin-outline")) map.setPaintProperty("basin-outline","line-opacity",props.opacity.basin);

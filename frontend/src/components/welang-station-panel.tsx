@@ -17,10 +17,11 @@ const periods: Record<Period, { label: string; hours: number; intervalMinutes: n
 const clockFormat = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit" });
 const timeFormat = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-export default function WelangStationPanel({ station }: { station: StationSnapshot }) {
+export default function WelangStationPanel({ station, showHeading = true }: { station: StationSnapshot; showHeading?: boolean }) {
   const [period, setPeriod] = useState<Period>("24h");
   const end = Date.now();
   const periodConfig = periods[period];
+  const capacityPercentage = Math.min(100, Math.max(0, (station.valueM / station.dangerM) * 100));
 
   const history = useMemo(() => {
     const count = (periodConfig.hours * 60) / periodConfig.intervalMinutes;
@@ -47,22 +48,43 @@ export default function WelangStationPanel({ station }: { station: StationSnapsh
   }, [end, station.delta3hM, station.valueM]);
 
   return (
-    <section className="live-station-panel" aria-label={`Preview detail ${station.name}`}>
-      <header className="live-heading">
+    <section className="live-station-panel welang-preview" aria-label={`Preview detail ${station.name}`}>
+      {showHeading && <header className="live-heading">
         <div>
           <span className="live-eyebrow">DAS Welang · Pasuruan</span>
           <h2>{station.name}</h2>
         </div>
-      </header>
+      </header>}
 
-      <div className="live-sensors" role="group" aria-label="Ringkasan muka air">
-        <button type="button" aria-pressed={true} style={{ width: "100%" }}>
-          <span>Muka air</span>
-          <strong>
-            {station.valueM.toFixed(2)} <small>m</small>
-          </strong>
-          <small>{(station.valueM * 100).toFixed(0)} cm</small>
-        </button>
+      <div className="live-gauge-container" role="group" aria-label="Ringkasan muka air">
+        <div className="live-level-visual">
+          <div className="live-tank-card">
+            <div className="live-tank-tube" title={`Muka air ${station.valueM.toFixed(2)} m dari ambang bahaya ${station.dangerM.toFixed(2)} m`}>
+              <div className="live-tank-water" style={{ height: `${capacityPercentage}%` }}>
+                <div className="live-tank-wave" />
+              </div>
+            </div>
+            <span className="live-tank-label">{capacityPercentage.toFixed(0)}% menuju ambang bahaya</span>
+          </div>
+          <div className="live-reading-block">
+            <span className="live-tank-label" style={{ color: "var(--blue)" }}>Tinggi Muka Air Sungai</span>
+            <div className="live-water-headline">
+              <span className="live-water-value">{(station.valueM * 100).toFixed(1)}</span>
+              <span className="live-water-unit">cm</span>
+            </div>
+            <span className="live-meter-sub">{station.valueM.toFixed(2)} meter</span>
+            <dl className="live-calc-breakdown">
+              <div className="live-calc-item">
+                <dt>Perubahan 3 jam</dt>
+                <dd>{station.delta3hM >= 0 ? "+" : ""}{(station.delta3hM * 100).toFixed(1)} cm</dd>
+              </div>
+              <div className="live-calc-item">
+                <dt>Status muka air</dt>
+                <dd>{station.status}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
       </div>
 
       <h3 id="riwayat-sensor">Riwayat muka air</h3>

@@ -6,7 +6,7 @@ import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip,
 import { getDemoSnapshot, stationHistory } from "@/lib/demo-data";
 import { chartTheme, connectionColors } from "@/lib/presentation";
 import type { LayerKey, RegionKey, StationSnapshot } from "@/lib/types";
-import { defaultRegion, regionOrder, regionPresets } from "@/lib/camera";
+import { defaultRegion, regionPresets } from "@/lib/camera";
 import Icon from "./icon";
 import { WelangBrand, SiteFooter } from "./brand";
 import { usePresence } from "./use-presence";
@@ -21,6 +21,7 @@ import { useSurabaya } from "./use-surabaya";
 import LiveStationPanel from "./live-station-panel";
 import { surabayaNames, surabayaStationFallback, liveStateLabel, liveTime, type LiveStation } from "@/lib/surabaya";
 import WelangStationPanel from "./welang-station-panel";
+import RegionFilter from "./region-filter";
 
 
 type Panel = "overview" | "layers" | "legend";
@@ -42,7 +43,8 @@ export default function Dashboard() {
   const chooseBasemap = (id: BasemapId) => { setBasemap(id); setBasemapRequest(current => ({id,sequence:current.sequence+1})); };
   const reportBasemap = (feedback: BasemapFeedback) => { setBasemapFeedback(feedback); if(feedback.state === "error" && feedback.active) setBasemap(feedback.active); };
   const [activeLayers, setActiveLayers] = useState<LayerKey[]>([
-    "admin", "regionalRivers", "topology", "labels", "rainfall", "quality",
+    "admin", "regionalRivers", "labels", "rainfall", "quality",
+    ...(region === "welang" ? ["topology" as const] : []),
     ...(region === "surabaya" ? ["surabayaRivers" as const] : []),
   ]);
   const [activePanel, setActivePanel] = useState<Panel | null>(null);
@@ -65,6 +67,7 @@ export default function Dashboard() {
   const closeChart = () => { setChartOpen(false); chartTrigger.current?.focus(); };
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchPointerFocus, setSearchPointerFocus] = useState(false);
   const [focusRequest, setFocusRequest] = useState<{ name: string; sequence: number } | null>(null);
   const snapshot = useMemo(() => getDemoSnapshot(0), []);
   const station = snapshot.stations.find((item) => item.name === selected) ?? snapshot.stations[13];
@@ -92,9 +95,12 @@ export default function Dashboard() {
   useEffect(() => { if (liveOpen) liveClose.current?.focus(); }, [liveOpen]);
   useEffect(() => { if (activePanel) document.querySelector<HTMLButtonElement>('.map-legend-shell:not([inert]) .overlay-close')?.focus(); }, [activePanel]);
   useEffect(() => {
-    setActiveLayers(current => region === "surabaya"
-      ? current.includes("surabayaRivers") ? current : [...current, "surabayaRivers"]
-      : current.filter(key => key !== "surabayaRivers"));
+    setActiveLayers(current => {
+      const layers: LayerKey[] = current.filter(key => key !== "topology" && key !== "surabayaRivers");
+      if (region === "welang") layers.push("topology");
+      if (region === "surabaya") layers.push("surabayaRivers");
+      return layers;
+    });
   }, [region]);
 
   useEffect(() => {
@@ -137,17 +143,12 @@ export default function Dashboard() {
     <section className="wm-workspace">
       <div className="wm-map-area">
         <MapView liveStations={liveStations} liveDisconnected={!!liveError} onLiveSelect={selectLive} region={region} basemapRequest={basemapRequest} opacity={opacity} onBasemapFeedback={reportBasemap} onHydroSources={setHydroSources} stations={snapshot.stations} selected={selected} activeLayers={activeLayers} onSelect={selectStation} onOpenChart={(trigger) => { chartTrigger.current = trigger ?? null; setWelangDrawerOpen(true); }} focusRequest={focusRequest} timeLabel={timeLabel} />
-         <div className="station-search" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSearchOpen(false); }}>
+         <div className={`station-search${searchPointerFocus ? " is-pointer-focused" : ""}`} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) { setSearchOpen(false); setSearchPointerFocus(false); } }}>
              <form role="search" onSubmit={(event) => { event.preventDefault(); if (scopedLiveResults[0] && (region === "surabaya" || !scopedResults[0])) selectLive(scopedLiveResults[0]); else if (scopedResults[0]) searchSelect(scopedResults[0]); }}>
              <Icon name="search" />
-             <input aria-label="Cari stasiun" aria-controls="station-results" aria-expanded={searchOpen} placeholder="Cari stasiun…" value={query} onFocus={() => setSearchOpen(true)} onChange={(event) => { setQuery(event.target.value); setSearchOpen(true); }} onKeyDown={(event) => { if (event.key === "Escape") setSearchOpen(false); }} />
+             <input aria-label="Cari stasiun" aria-controls="station-results" aria-expanded={searchOpen} placeholder="Cari stasiun…" value={query} onPointerDown={() => setSearchPointerFocus(true)} onFocus={() => setSearchOpen(true)} onBlur={() => setSearchPointerFocus(false)} onChange={(event) => { setQuery(event.target.value); setSearchOpen(true); }} onKeyDown={(event) => { setSearchPointerFocus(false); if (event.key === "Escape") setSearchOpen(false); }} />
              {query && <button type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")}><Icon name="close" /></button>}
-             <span className="search-scope" title={`Cakupan: ${regionPresets[region].label}`}>
-               <Icon name="filter" />
-               <select aria-label="Cakupan pencarian" value={region} onChange={(event) => changeRegion(event.target.value as RegionKey)}>
-                 {regionOrder.map(key => <option key={key} value={key}>{regionPresets[key].label}</option>)}
-               </select>
-             </span>
+             <RegionFilter value={region} onChange={changeRegion} onOpen={() => setSearchOpen(false)} />
            </form>
            {searchOpen && <div id="station-results" className="station-results"><small>{scopedResults.length + scopedLiveResults.length} stasiun ditemukan</small>{scopedLiveResults.map(item => <button key={item.id} onClick={() => selectLive(item)}><i style={{ background: item.state === "live" && !liveError ? connectionColors.live : connectionColors.delayed }} /><span>{item.name}</span><small>{liveError ? "Koneksi terputus" : liveStateLabel[item.state]}</small></button>)}{scopedResults.map((item) => <button key={item.name} onClick={() => searchSelect(item)}><i style={{ background: item.color }} /><span>{item.name}</span><small>{item.status}</small></button>)}{!scopedResults.length && !scopedLiveResults.length && <p>Nama tidak ditemukan. Coba nama stasiun lain.</p>}</div>}
         </div>
@@ -164,13 +165,16 @@ export default function Dashboard() {
         )}
         {welangDrawerOpen && station && (
           <aside className="live-drawer" aria-label={`Detail stasiun ${station.name}`} onKeyDown={(event) => { if (event.key === "Escape") setWelangDrawerOpen(false); }}>
-            <button className="live-close" aria-label="Tutup detail" onClick={() => setWelangDrawerOpen(false)}><span aria-hidden="true">×</span></button>
-            <WelangStationPanel station={station} />
+            <div className="live-drawer-topbar">
+              <strong>{station.name}</strong>
+              <button className="live-close" aria-label="Tutup detail" onClick={() => setWelangDrawerOpen(false)}><span aria-hidden="true">×</span></button>
+            </div>
+            <WelangStationPanel station={station} showHeading={false} />
           </aside>
         )}
         {shownPanel === "legend" && <div className={`map-legend-shell${activePanel ? "" : " is-closing"}`} inert={!activePanel} onKeyDown={(event) => { if (event.key === "Escape") closePanel(); }}><LegendPanel onClose={closePanel} activeLayers={activeLayers} sources={hydroSources} /></div>}
         {shownPanel === "overview" && <div className={`map-legend-shell${activePanel ? "" : " is-closing"}`} inert={!activePanel} onKeyDown={(event) => { if (event.key === "Escape") closePanel(); }}><OverviewPanel onClose={closePanel} /></div>}
-        {shownPanel === "layers" && <div className={`map-legend-shell${activePanel ? "" : " is-closing"}`} inert={!activePanel} onKeyDown={(event) => { if (event.key === "Escape") closePanel(); }}><LayersPanel active={activeLayers} opacity={opacity} sources={hydroSources} region={region} selected={basemap} feedback={basemapFeedback} onSelect={chooseBasemap} onToggle={toggleLayer} onOpacity={(key,value) => setOpacity(current => ({...current,[key]:value}))} onClear={() => setActiveLayers([])} onClose={closePanel} /></div>}
+        {shownPanel === "layers" && <div className={`map-legend-shell${activePanel ? "" : " is-closing"}`} inert={!activePanel} onKeyDown={(event) => { if (event.key === "Escape") closePanel(); }}><LayersPanel active={activeLayers} opacity={opacity} sources={hydroSources} region={region} selected={basemap} feedback={basemapFeedback} onSelect={chooseBasemap} onToggle={toggleLayer} onOpacity={(key,value) => setOpacity(current => ({...current,[key]:value}))} onClear={() => setActiveLayers(current => current.filter(key => key === "topology" || key === "surabayaRivers"))} onClose={closePanel} /></div>}
       </div>
     </section>
     {shownChart && (<section id="station-chart" className={`wm-chart-panel${chartOpen ? "" : " is-closing"}`} inert={!chartOpen} onKeyDown={(event) => { if (event.key === "Escape") closeChart(); }} aria-label="Grafik stasiun"><div className="chart-heading"><div><h2>Muka air · {station.name}</h2><span>24 jam riwayat simulasi</span></div><button ref={chartClose} className="panel-close" aria-label="Tutup grafik" onClick={closeChart}><Icon name="close" /></button><div className="chart-legend"><span><i className="chart-key water" />Muka air (m)</span><span><i className="chart-key rain" />Hujan (mm)</span></div></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={history} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}><CartesianGrid stroke={chartTheme.grid} vertical={false} /><XAxis dataKey="time" tick={chartTheme.tick} minTickGap={28} /><YAxis width={45} tickFormatter={(value: number) => value.toFixed(1)} yAxisId="water" tick={chartTheme.tick} domain={["dataMin - 0.2", "dataMax + 0.3"]} /><YAxis width={35} yAxisId="rain" orientation="right" tick={chartTheme.tick} /><Tooltip formatter={(value) => Number(value).toFixed(2)} contentStyle={chartTheme.tooltip} /><Area isAnimationActive={false} yAxisId="rain" type="monotone" dataKey="rainMm" fill={chartTheme.rainFill} stroke={chartTheme.rain} name="Hujan" unit=" mm" /><Line isAnimationActive={false} yAxisId="water" type="monotone" dataKey="valueM" stroke={chartTheme.water} strokeWidth={2.5} dot={false} name="Muka air" unit=" m" /></ComposedChart></ResponsiveContainer></div></section>)}

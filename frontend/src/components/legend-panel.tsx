@@ -1,4 +1,5 @@
 import Icon from "./icon";
+import WaterwayKey from "./waterway-key";
 import { statusColors } from "@/lib/presentation";
 import type { HydroSources } from "./layers-panel";
 import type { LayerKey, StationStatus } from "@/lib/types";
@@ -27,6 +28,7 @@ export default function LegendPanel({ onClose, activeLayers, sources }: { onClos
     <details className="legend-details"><summary>Lapisan peta</summary><section>
       {activeLayers.includes("topology") && sources.topology && <div className="legend-row"><i className="legend-river" /><div><b>Sungai DAS Welang</b><small>OpenStreetMap contributors · ODbL</small></div></div>}
       {activeLayers.includes("surabayaRivers") && sources.surabayaRivers && <div className="legend-row"><i className="legend-river" /><div><b>Sungai Surabaya</b><small>OpenStreetMap contributors · ODbL</small></div></div>}
+      {((activeLayers.includes("topology") && sources.topology) || (activeLayers.includes("surabayaRivers") && sources.surabayaRivers)) && <WaterwayKey />}
       {activeLayers.includes("subdas") && sources.subdas && <div className="legend-row"><i className="legend-subbasin" /><div><b>Sub-DAS stasiun</b><small>Partisi area aliran dari DEMNAS ~30 m</small></div></div>}
       {activeLayers.includes("basin") && sources.basin && <div className="legend-row"><i className="legend-basin" /><div><b>Batas DAS Welang</b><small>BIG · Atlas Wilayah Sungai · WELANG (11622)</small></div></div>}
       {activeLayers.includes("admin") && sources.admin && <div className="legend-row"><i className="legend-admin" /><div><b>Kabupaten/kota Jawa Timur</b><small>BIG · Batas Wilayah Administrasi</small></div></div>}
