@@ -148,7 +148,13 @@ export default function Dashboard() {
              <Icon name="search" />
              <input aria-label="Cari stasiun" aria-controls="station-results" aria-expanded={searchOpen} placeholder="Cari stasiun…" value={query} onPointerDown={() => setSearchPointerFocus(true)} onFocus={() => setSearchOpen(true)} onBlur={() => setSearchPointerFocus(false)} onChange={(event) => { setQuery(event.target.value); setSearchOpen(true); }} onKeyDown={(event) => { setSearchPointerFocus(false); if (event.key === "Escape") setSearchOpen(false); }} />
              {query && <button type="button" aria-label="Hapus pencarian" onClick={() => setQuery("")}><Icon name="close" /></button>}
-             <RegionFilter value={region} onChange={changeRegion} onOpen={() => setSearchOpen(false)} />
+             <RegionFilter value={region} onChange={changeRegion} onOpen={() => {
+               setSearchOpen(false);
+               setActivePanel(null);
+               setLiveOpen(false);
+               setWelangDrawerOpen(false);
+               setChartOpen(false);
+             }} />
            </form>
            {searchOpen && <div id="station-results" className="station-results"><small>{scopedResults.length + scopedLiveResults.length} stasiun ditemukan</small>{scopedLiveResults.map(item => <button key={item.id} onClick={() => selectLive(item)}><i style={{ background: item.state === "live" && !liveError ? connectionColors.live : connectionColors.delayed }} /><span>{item.name}</span><small>{liveError ? "Koneksi terputus" : liveStateLabel[item.state]}</small></button>)}{scopedResults.map((item) => <button key={item.name} onClick={() => searchSelect(item)}><i style={{ background: item.color }} /><span>{item.name}</span><small>{item.status}</small></button>)}{!scopedResults.length && !scopedLiveResults.length && <p>Nama tidak ditemukan. Coba nama stasiun lain.</p>}</div>}
         </div>

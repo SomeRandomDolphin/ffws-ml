@@ -180,7 +180,7 @@
   .nav-context { display:none; }
   .monitor-context { padding:8px 16px; }
   .map-legend-overlay { top:12px; right:8px; bottom:8px; width:calc(100% - 16px); }
-  .station-search { top:12px; left:68px; width:calc(100% - 80px); }
+  .station-search { z-index:10; top:12px; left:68px; width:calc(100% - 80px); }
   .station-search form { padding:0 8px 0 10px; }
   .maplibregl-ctrl-top-left { top:2px; left:2px; }
   .map-fit { left:12px; top:112px; }
