@@ -9,6 +9,8 @@ The pipeline is intentionally independent from ``training/dhompo/train_sklearn.p
 because the existing script targets the Dhompo station schema.
 """
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import argparse
@@ -23,8 +25,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.base import clone
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
 
 from dhompo.config import load_yaml_config, resolve_path_from_config
@@ -108,6 +112,43 @@ def _json_safe_metrics(metrics: dict[str, float]) -> dict[str, float]:
     return {k: float(v) for k, v in metrics.items()}
 
 
+def _walk_forward_scores(
+    template,
+    use_scaled: bool,
+    X: pd.DataFrame,
+    y: pd.Series,
+    current: pd.Series,
+    future_level: pd.Series,
+    target_mode: str,
+    n_splits: int,
+    gap: int,
+) -> tuple[list[dict[str, float]], np.ndarray]:
+    splitter = TimeSeriesSplit(n_splits=n_splits, gap=gap)
+    scores: list[dict[str, float]] = []
+    absolute_errors: list[float] = []
+    for train_idx, validation_idx in splitter.split(X):
+        X_train = X.iloc[train_idx]
+        X_validation = X.iloc[validation_idx]
+        if use_scaled:
+            scaler = StandardScaler().fit(X_train)
+            X_train = pd.DataFrame(
+                scaler.transform(X_train), index=X_train.index, columns=X_train.columns
+            )
+            X_validation = pd.DataFrame(
+                scaler.transform(X_validation),
+                index=X_validation.index,
+                columns=X_validation.columns,
+            )
+        model = clone(template).fit(X_train, y.iloc[train_idx])
+        prediction = model.predict(X_validation)
+        if target_mode in {"delta", "persistence_residual"}:
+            prediction = current.iloc[validation_idx].to_numpy() + prediction
+        truth = future_level.iloc[validation_idx].to_numpy()
+        scores.append(_json_safe_metrics(calc_metrics(truth, prediction)))
+        absolute_errors.extend(np.abs(truth - prediction).tolist())
+    return scores, np.asarray(absolute_errors, dtype=float)
+
+
 def main() -> None:
     args = parse_args()
     config = load_yaml_config(args.config)
@@ -127,6 +168,7 @@ def main() -> None:
         include_quality_flags=include_quality_flags,
         lag_steps=lag_steps,
         rolling_windows=rolling_windows,
+        pump_control=feature_cfg.get("pump_control"),
     )
     horizons = [int(h) for h in config.get("horizons", [1, 2, 3, 4, 5])]
     target_mode = str(config.get("target_mode", "level")).lower()
@@ -168,6 +210,14 @@ def main() -> None:
     print(f"Rows after alignment: {len(X_full)} | train={len(X_train_raw)} test={len(X_test_raw)}")
     print(f"Range: {X_full.index.min()} -> {X_full.index.max()}")
 
+    required_signals = [str(v) for v in feature_cfg.get("required_signals", [])]
+    missing_required = [signal for signal in required_signals if signal not in data.feature_columns]
+    if missing_required:
+        raise ValueError(
+            "Required pump-aware signals are unavailable after coverage filtering: "
+            + ", ".join(missing_required)
+        )
+
     if args.dry_run:
         return
 
@@ -197,6 +247,7 @@ def main() -> None:
     metadata: dict[str, Any] = {
         "target_column": data.target_column,
         "target_mode": target_mode,
+        "model_version": "urban_file_v2",
         "feature_columns": list(X_full.columns),
         "source_signals": data.feature_columns,
         "horizons": horizons,
@@ -208,20 +259,48 @@ def main() -> None:
         "models": {},
         "coverage": data.coverage.to_dict(orient="records"),
         "outlier_summary": data.outlier_summary.to_dict(orient="records"),
+        "uses_pump_telemetry": bool(feature_cfg.get("pump_control", {}).get("activity_columns")),
+        "validation": {
+            "strategy": "expanding_window",
+            "n_splits": int(config.get("validation", {}).get("n_splits", 3)),
+            "gap_steps": int(config.get("validation", {}).get("gap_steps", max(horizons) * 2)),
+        },
+        "prediction_intervals": {},
+        "baselines": {},
     }
 
     best_per_horizon: dict[int, tuple[str, float, Path]] = {}
+    interval_errors: dict[tuple[int, str], np.ndarray] = {}
+    validation_cfg = config.get("validation", {})
+    validation_splits = int(validation_cfg.get("n_splits", 3))
+    validation_gap = int(validation_cfg.get("gap_steps", max(horizons) * 2))
     for h in horizons:
         y = y_horizons[h]
         y_train = y.iloc[:split_idx]
-        y_test = y.iloc[split_idx:]
         level_train = future_targets[h].iloc[:split_idx]
         level_test = future_targets[h].iloc[split_idx:]
         current_train = current_target.iloc[:split_idx]
         current_test = current_target.iloc[split_idx:]
+        persistence_metrics = calc_metrics(
+            level_test.to_numpy(), current_test.to_numpy()
+        )
+        metadata["baselines"][f"h{h}"] = {
+            "persistence": _json_safe_metrics(persistence_metrics),
+        }
         print(f"\n=== Horizon +{h}h ===")
 
         for model_name, (template, use_scaled) in model_defs.items():
+            fold_scores, absolute_errors = _walk_forward_scores(
+                template,
+                use_scaled,
+                X_train_raw,
+                y_train,
+                current_train,
+                level_train,
+                target_mode,
+                validation_splits,
+                validation_gap,
+            )
             model = clone(template)
             Xtr = X_train_s if use_scaled else X_train_raw
             Xte = X_test_s if use_scaled else X_test_raw
@@ -247,24 +326,50 @@ def main() -> None:
                 "use_scaled": bool(use_scaled),
                 "train_metrics": _json_safe_metrics(train_metrics),
                 "test_metrics": _json_safe_metrics(test_metrics),
+                "walk_forward_metrics": fold_scores,
+                "beats_persistence_on_test": (
+                    float(test_metrics["RMSE"]) < float(persistence_metrics["RMSE"])
+                ),
             }
+            interval_errors[(h, model_key)] = absolute_errors
 
-            nse = float(test_metrics["NSE"])
+            cv_rmse = float(np.mean([score["RMSE"] for score in fold_scores]))
             rmse = float(test_metrics["RMSE"])
-            print(f"  {model_name:24s} NSE={nse:.4f} RMSE={rmse:.4f}")
-            if h not in best_per_horizon or nse > best_per_horizon[h][1]:
-                best_per_horizon[h] = (model_key, nse, model_path)
+            print(
+                f"  {model_name:24s} CV_RMSE={cv_rmse:.4f} "
+                f"TEST_RMSE={rmse:.4f} PERSISTENCE_RMSE={persistence_metrics['RMSE']:.4f}"
+            )
+            if h not in best_per_horizon or cv_rmse < best_per_horizon[h][1]:
+                best_per_horizon[h] = (model_key, cv_rmse, model_path)
 
     metadata["best_per_horizon"] = {
-        f"h{h}": {"model_key": key, "nse": nse, "path": path.name}
-        for h, (key, nse, path) in best_per_horizon.items()
+        f"h{h}": {"model_key": key, "cv_rmse": score, "path": path.name}
+        for h, (key, score, path) in best_per_horizon.items()
+    }
+    for h, (key, _, _) in best_per_horizon.items():
+        errors = interval_errors[(h, key)]
+        metadata["prediction_intervals"][f"h{h}"] = {
+            "method": "walk_forward_absolute_error",
+            "coverage": 0.90,
+            "absolute_error_p90": float(np.quantile(errors, 0.90)),
+        }
+    promotion_by_horizon = {
+        f"h{h}": bool(metadata["models"][f"h{h}:{key}"]["beats_persistence_on_test"])
+        for h, (key, _, _) in best_per_horizon.items()
+    }
+    metadata["promotion"] = {
+        "required_to_beat_persistence": bool(
+            config.get("deployment", {}).get("require_persistence_improvement", True)
+        ),
+        "eligible_by_horizon": promotion_by_horizon,
+        "all_horizons_eligible": all(promotion_by_horizon.values()),
     }
     metadata_path = output_dir / "training_metadata.json"
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     print("\n=== Best Models ===")
-    for h, (key, nse, path) in best_per_horizon.items():
-        print(f"  h{h}: {key} NSE={nse:.4f} -> {path.name}")
+    for h, (key, score, path) in best_per_horizon.items():
+        print(f"  h{h}: {key} CV_RMSE={score:.4f} -> {path.name}")
     print(f"\nSaved metadata: {metadata_path}")
 
 

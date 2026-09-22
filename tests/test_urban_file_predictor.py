@@ -59,6 +59,11 @@ def test_urban_file_predictor_loads_best_models_and_predicts(tmp_path):
                 "test_metrics": {},
             }
         },
+        "model_version": "urban_file_v2",
+        "uses_pump_telemetry": True,
+        "prediction_intervals": {
+            "h1": {"absolute_error_p90": 2.0},
+        },
     }
     (tmp_path / "training_metadata.json").write_text(
         json.dumps(metadata),
@@ -69,4 +74,21 @@ def test_urban_file_predictor_loads_best_models_and_predicts(tmp_path):
     result = predictor.predict_from_history(values, flags)
 
     assert result.predictions == {"h1": 12.3457}
+    assert result.intervals == {"h1": (10.3457, 14.3457)}
     assert result.target_column == "ketinggian_lokasi_1_hang_tuah"
+    assert result.model_version == "urban_file_v2"
+    assert result.uses_pump_telemetry is True
+    assert result.fallback_horizons == ()
+
+    metadata["promotion"] = {
+        "required_to_beat_persistence": True,
+        "eligible_by_horizon": {"h1": False},
+    }
+    (tmp_path / "training_metadata.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
+    fallback = UrbanFilePredictor(model_dir=tmp_path).predict_from_history(values, flags)
+
+    assert fallback.predictions == {"h1": 29.0}
+    assert fallback.intervals == {}
+    assert fallback.fallback_horizons == ("h1",)

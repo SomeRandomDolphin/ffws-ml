@@ -172,7 +172,10 @@ class LiveSurabaya:
 
     def forecast(self, location, sensor, rows, now, source_ok):
         latest = rows[-1] if rows else None
-        empty = {"method": "unavailable", "issuedAt": None, "points": [], "reason": ""}
+        empty = {
+            "method": "unavailable", "issuedAt": None, "points": [], "reason": "",
+            "modelVersion": None, "usesPumpTelemetry": False, "dataFreshnessSeconds": None,
+        }
         if not latest or finite(latest.get(sensor)) is None:
             return dict(empty, reason="Pembacaan sensor belum tersedia.")
         anchor = timestamp(latest["time"])
@@ -185,8 +188,11 @@ class LiveSurabaya:
         if not self.config["water_level"].get("predictions_enabled"):
             return dict(empty, reason="Prediksi belum diaktifkan.")
         method = "persistence"
+        model_version = "persistence_v1"
+        uses_pump_telemetry = False
         reason = "Baseline nilai tetap; model terlatih untuk lokasi ini belum tersedia."
         forecasts = {f"h{h}": value for h in range(1, 6)}
+        intervals = {}
         if location["key"] == "lokasi_1_hang_tuah":
             if self.predictor is None:
                 return dict(empty, reason="Model Hang Tuah belum siap.")
@@ -211,17 +217,43 @@ class LiveSurabaya:
                 # Keep them explicitly missing rather than averaging A/B or inventing rainfall.
                 result = self.predictor.predict_from_history(values, flags)
                 forecasts = result.predictions
+                intervals = getattr(result, "intervals", {})
                 if any(finite(v) is None or v < 0 for v in forecasts.values()):
                     return dict(empty, reason="Hasil model tidak valid.")
                 anchor = end.to_pydatetime().replace(tzinfo=WIB)
                 method = "urban_file"
-                reason = "Model Hang Tuah eksperimental; fitur Kalibokor ditandai missing. Asumsi cm belum diverifikasi."
+                model_version = getattr(result, "model_version", "urban_file_v1")
+                uses_pump_telemetry = bool(getattr(result, "uses_pump_telemetry", False))
+                fallback_horizons = getattr(result, "fallback_horizons", ())
+                if fallback_horizons:
+                    reason = (
+                        "Persistence dipakai untuk horizon yang belum mengalahkan baseline: "
+                        + ", ".join(fallback_horizons)
+                        + "."
+                    )
+                else:
+                    reason = "Model Hang Tuah eksperimental; fitur Kalibokor ditandai missing. Asumsi cm belum diverifikasi."
             except Exception:
                 return dict(empty, reason="Model belum dapat menghasilkan prediksi dari riwayat ini.")
+        points = []
+        for horizon_key, predicted in forecasts.items():
+            lead_hours = int(horizon_key[1:])
+            point = {
+                "leadHours": lead_hours,
+                "time": (anchor + timedelta(hours=lead_hours)).isoformat(),
+                "valueCm": round(predicted, 3),
+            }
+            if horizon_key in intervals:
+                point["lowerCm"], point["upperCm"] = intervals[horizon_key]
+            points.append(point)
         return {
-            "method": method, "issuedAt": anchor.isoformat(), "reason": reason,
-            "points": [{"leadHours": int(h[1:]), "time": (anchor + timedelta(hours=int(h[1:]))).isoformat(),
-                        "valueCm": round(v, 3)} for h, v in forecasts.items()],
+            "method": method,
+            "issuedAt": anchor.isoformat(),
+            "reason": reason,
+            "modelVersion": model_version,
+            "usesPumpTelemetry": uses_pump_telemetry,
+            "dataFreshnessSeconds": round(age, 3),
+            "points": points,
         }
 
     def build_snapshot(self, now=None):
@@ -249,8 +281,17 @@ class LiveSurabaya:
                         if observed >= cutoff:
                             bucket = observed.replace(minute=(observed.minute // 30)*30, second=0, microsecond=0)
                             history[bucket.isoformat()] = {"time": row["time"], "valueCm": finite(row.get(column))}
+                raw_value = finite(latest.get(column)) if latest else None
+                reference_cm = finite(spec.get("reference_cm"))
+                water_level = (
+                    max(0.0, reference_cm - raw_value)
+                    if raw_value is not None and reference_cm is not None
+                    else None
+                )
                 sensors.append({
-                    "id": column, "valueCm": finite(latest.get(column)) if latest else None,
+                    "id": column, "valueCm": raw_value, "waterLevelCm": water_level,
+                    "measurement": spec.get("measurement", "unverified"),
+                    "calibrationRequired": bool(spec.get("calibration_required", False)),
                     "history": list(history.values()),
                     "forecast": self.forecast(loc, column, rows, now, source_ok),
                 })

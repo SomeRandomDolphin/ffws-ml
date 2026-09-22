@@ -20,9 +20,12 @@ _DEFAULT_CONFIG_PATH = "configs/surabaya/urban_water_level.yaml"
 @dataclass(frozen=True)
 class UrbanPredictionResult:
     predictions: dict[str, float]
+    intervals: dict[str, tuple[float, float]]
     models: dict[str, str]
     target_column: str
     model_version: str
+    uses_pump_telemetry: bool
+    fallback_horizons: tuple[str, ...]
 
 
 class UrbanFilePredictor:
@@ -88,6 +91,7 @@ class UrbanFilePredictor:
             include_quality_flags=bool(feature_cfg.get("include_quality_flags", True)),
             lag_steps=[int(v) for v in feature_cfg.get("lag_steps", [1, 2, 3])],
             rolling_windows=rolling_windows,
+            pump_control=feature_cfg.get("pump_control"),
         )
         if X_all.empty:
             raise ValueError("Feature matrix is empty; provide longer warm-up history.")
@@ -100,7 +104,22 @@ class UrbanFilePredictor:
 
         X_scaled = None
         predictions: dict[str, float] = {}
+        intervals: dict[str, tuple[float, float]] = {}
+        fallback_horizons: list[str] = []
         for horizon, model in sorted(self._models.items()):
+            horizon_key = f"h{horizon}"
+            promotion = self._metadata.get("promotion", {})
+            eligible = promotion.get("eligible_by_horizon", {}).get(horizon_key, True)
+            if promotion.get("required_to_beat_persistence", False) and not eligible:
+                current_value = values.loc[X_raw.index[0], self._target_column]
+                if pd.isna(current_value):
+                    raise ValueError(
+                        f"Current target value is unavailable for persistence fallback: "
+                        f"{self._target_column}"
+                    )
+                predictions[horizon_key] = round(float(current_value), 4)
+                fallback_horizons.append(horizon_key)
+                continue
             X = X_raw
             if self._use_scaled[horizon]:
                 if X_scaled is None:
@@ -120,13 +139,24 @@ class UrbanFilePredictor:
                     )
                 current_level = float(current_value)
                 raw_pred = current_level + raw_pred
-            predictions[f"h{horizon}"] = round(raw_pred, 4)
+            predictions[horizon_key] = round(raw_pred, 4)
+            radius = self._metadata.get("prediction_intervals", {}).get(
+                horizon_key, {}
+            ).get("absolute_error_p90")
+            if radius is not None:
+                intervals[horizon_key] = (
+                    round(max(0.0, raw_pred - float(radius)), 4),
+                    round(raw_pred + float(radius), 4),
+                )
 
         return UrbanPredictionResult(
             predictions=predictions,
+            intervals=intervals,
             models=self.model_mapping(),
             target_column=self._target_column,
-            model_version="urban_file_v1",
+            model_version=str(self._metadata.get("model_version", "urban_file_v1")),
+            uses_pump_telemetry=bool(self._metadata.get("uses_pump_telemetry", False)),
+            fallback_horizons=tuple(fallback_horizons),
         )
 
     def _load_metadata(self) -> dict[str, Any]:

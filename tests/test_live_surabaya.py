@@ -59,6 +59,9 @@ def test_forecast_is_per_sensor_and_uses_observation_time(service):
     assert [p["valueCm"] for p in a["points"]] == [342] * 5
     assert [p["valueCm"] for p in b["points"]] == [416.4] * 5
     assert datetime.fromisoformat(a["points"][0]["time"]) == now + timedelta(hours=1)
+    assert station["sensors"][0]["waterLevelCm"] == 188
+    assert a["modelVersion"] == "persistence_v1"
+    assert a["usesPumpTelemetry"] is False
 
 
 @pytest.mark.parametrize("minutes,state", [(11, "stale"), (-2, "future")])
